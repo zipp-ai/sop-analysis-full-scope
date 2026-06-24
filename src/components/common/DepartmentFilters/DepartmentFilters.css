@@ -1,0 +1,153 @@
+.department-filters-container {
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+}
+
+.filter-heading {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.filter-buttons-wrapper {
+  position: relative;
+  overflow-x: auto;
+  padding-bottom: 4px; /* Add space for potential scrollbar */
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.5rem 0.5rem;
+  border: 1px solid #e1e1e1;
+  border-radius: 100px;
+  background-color: #f8f8f8;
+  color: #555;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2sease;
+  white-space: nowrap;
+  font-weight: 500;
+  /* height: 24px; */
+  background: none;
+}
+
+.filter-btn:hover {
+  background-color: #f0f0f7;
+  border-color: #d9d9e9;
+  color: #6c63ff;
+}
+
+.filter-btn.active {
+  background-color: #6c63ff;
+  color: white;
+  border-color: #6c63ff;
+  box-shadow: 0 2px 4px rgba(108, 99, 255, 0.2);
+}
+
+/* Add responsive styles */
+@media (max-width: 768px) {
+  .filter-buttons {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  
+  .filter-buttons::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .filter-buttons::-webkit-scrollbar-thumb {
+    background-color: rgba(108, 99, 255, 0.3);
+    border-radius: 4px;
+  }
+  
+  .filter-btn {
+    flex: 0 0 auto;
+  }
+}
+
+/* Add styles for the loading spinner */
+.departments-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 5px;
+  min-height: 40px;
+}
+
+/* Replace the dropdown styles with drawer styles */
+.department-drawer-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 38px; /* Match the height of the filter buttons */
+}
+
+/* Style for the selected department button */
+.selected-department {
+  z-index: 10;
+  position: relative;
+  background-color: #6c63ff !important;
+}
+
+/* Style for the horizontal drawer */
+.department-drawer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 100px;
+  overflow: hidden;
+  /* transition: width 0.3s ease, padding-left 0.3s ease; */
+  width: 0;
+  padding-left: 0px;
+  white-space: nowrap;
+}
+
+/* Open state for the drawer */
+.department-drawer.open {
+  width: auto;
+  padding-left: calc(100% + 10px); /* Leave a bit of the selected button visible */
+  box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Style for items in the drawer */
+.drawer-item {
+  margin-right: 8px;
+  flex-shrink: 0;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition-delay: 0s;
+}
+
+/* Show drawer items when open */
+.department-drawer.open .drawer-item {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.1s;
+}
+
+/* Ensure the drawer doesn't interfere with other elements */
+.department-drawer-container {
+  overflow: visible;
+}
+
+/* Remove the dropdown arrow since we're using a drawer */
+.dropdown-arrow {
+  display: none;
+} 

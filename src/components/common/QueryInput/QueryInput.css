@@ -1,0 +1,174 @@
+/* Brand-style Input Container */
+.whatsapp-input-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-white);
+  border-top: 1px solid var(--border-slate-200);
+  padding: 1rem;
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.whatsapp-input-form {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+      flex-direction: column;
+      gap: 4px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-slate-50);
+  border-radius: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-slate-200);
+  transition: border-color 0.2s ease;
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--primary-blue);
+  background: var(--bg-white);
+}
+
+  .end-session-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+.whatsapp-input-field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-slate-900);
+  font-size: 14px;
+  /* line-height: 1.4; */
+  padding: 8px 12px;
+  font-family: inherit;
+  resize: none;
+  overflow-y: auto;
+  max-height: 100px;
+  min-height: 20px;
+}
+
+.whatsapp-input-field::placeholder {
+  color: var(--text-slate-500);
+}
+
+.whatsapp-input-field:focus {
+  outline: none;
+}
+
+/* Scrollbar for textarea */
+.whatsapp-input-field::-webkit-scrollbar {
+  width: 4px;
+}
+
+.whatsapp-input-field::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.whatsapp-input-field::-webkit-scrollbar-thumb {
+  background: var(--text-slate-400);
+  border-radius: 2px;
+}
+
+.whatsapp-send-button {
+  background: var(--primary-blue);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.whatsapp-send-button:hover:not(:disabled) {
+  background: var(--primary-blue);
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+.whatsapp-send-button:disabled {
+  background: var(--text-slate-400);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.send-icon {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .whatsapp-input-container {
+    padding: 0.75rem;
+  }
+  
+  .input-wrapper {
+    padding: 6px 10px;
+  }
+  
+  .whatsapp-input-field {
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+  
+  .whatsapp-send-button {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .send-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .whatsapp-input-container {
+    padding: 0.5rem;
+  }
+  
+  .input-wrapper {
+    padding: 4px 8px;
+  }
+  
+  .whatsapp-input-field {
+    font-size: 13px;
+    padding: 4px 6px;
+  }
+  
+  .whatsapp-send-button {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .send-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+  

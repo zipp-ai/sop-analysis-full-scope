@@ -1,0 +1,69 @@
+:root {
+  /* Primary Colors */
+  --primary-blue: #6c63ff;
+  --primary-blue-light: #eff6ff;
+  --primary-blue-hover: rgba(37, 99, 235, 0.1);
+  
+  /* Severity Colors */
+  --severity-high-bg: #fecaca;
+  --severity-high-text: #dc2626;
+  --severity-high-dark: #b91c1c;
+  
+  --severity-medium-bg: #fed7aa;
+  --severity-medium-text: #ea580c;
+  --severity-medium-dark: #d97706;
+  
+  --severity-low-bg: #d1fae5;
+  --severity-low-text: #16a34a;
+  --severity-low-dark: #16a34a;
+  
+  /* Status Colors */
+  --status-red: #ef4444;
+  --status-amber: #f59e0b;
+  --status-green: #22c55e;
+  --status-gray: #64748b;
+  
+  /* Background Colors */
+  --bg-white: #ffffff;
+  --bg-slate-50: #f8fafc;
+  --bg-slate-100: #f1f5f9;
+  --bg-gray-50: #f9fafb;
+  
+  /* Stat Card Backgrounds */
+  --stat-red-bg: #fef2f2;
+  --stat-amber-bg: #fffbeb;
+  --stat-blue-bg: #eff6ff;
+  --stat-green-bg: #f0fdf4;
+  
+  /* Border Colors */
+  --border-slate-200: #e2e8f0;
+  --border-slate-100: #f1f5f9;
+  --border-gray-200: #e5e7eb;
+  
+  /* Text Colors */
+  --text-slate-900: #1e293b;
+  --text-slate-700: #334155;
+  --text-slate-600: #475569;
+  --text-slate-500: #64748b;
+  --text-slate-400: #94a3b8;
+  --text-gray-700: #374151;
+  --text-gray-600: #4b5563;
+  
+  /* Hover Colors */
+  --hover-slate-50: #f8fafc;
+  --hover-slate-100: #f1f5f9;
+  
+  /* Badge Colors */
+  --badge-default-bg: #e5e7eb;
+  --badge-default-text: #374151;
+  --badge-outline-border: #e2e8f0;
+  --badge-outline-text: #64748b;
+  --badge-secondary-bg: #f1f5f9;
+  --badge-secondary-text: #64748b;
+  
+  /* Shadow */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  /* Focus Ring */
+  --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.1);
+} 

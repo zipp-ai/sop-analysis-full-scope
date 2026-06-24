@@ -1,0 +1,51 @@
+{
+  "routes": [
+    {
+      "route": "/",
+      "serve": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "route": "/dashboard",
+      "serve": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "route": "/login",
+      "serve": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "route": "/profile",
+      "serve": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "route": "/sop-library",
+      "serve": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "route": "/gap-analysis",
+      "serve": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "route": "/settings",
+      "serve": "/index.html",
+      "statusCode": 200
+    },
+    {
+      "route": "/*",
+      "statusCode": 404,
+      "serve": "/404.html"
+    }
+  ],
+  "platformErrorOverrides": [
+    {
+      "errorType": "NotFound",
+      "statusCode": 404,
+      "serve": "/404.html"
+    }
+  ]
+} 

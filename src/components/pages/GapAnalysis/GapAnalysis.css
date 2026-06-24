@@ -1,0 +1,692 @@
+.gap-analysis {
+  width: 100%;
+}
+
+.gap-content {
+  display: flex;
+  flex-direction: column;
+  height: auto; /* Remove viewport dependency */
+  min-height: 800px; /* Set a minimum height */
+padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative; /* Add position relative for absolute positioning of children if needed */
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h2 {
+  font-size: 24px;
+  color: var(--text-slate-900);
+  margin: 0;
+}
+
+.compliance-overview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 5rem;
+}
+
+.overview-card {
+  background: var(--stat-blue-bg);
+  padding: 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  gap: 1rem;
+  height: 100%;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.stat-icon {
+  width: 32px;
+  height: 32px;
+  background-color: var(--primary-blue-hover);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.stat-content h3 {
+  font-size: 14px;
+  color: var(--text-slate-600);
+  margin: 0 0 0.5rem 0;
+}
+
+.stat-value {
+  font-size: 24px;
+  color: var(--text-slate-900);
+  margin-bottom: 0.5rem;
+}
+
+.stat-content p {
+  font-size: 14px;
+  color: var(--text-slate-600);
+  margin: 0;
+  flex-grow: 1;
+}
+
+.action-btn {
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 1rem;
+  align-self: flex-start;
+  transition: all 0.2s ease;
+}
+
+.action-btn.disabled {
+  background-color: var(--text-slate-400);
+  color: var(--text-slate-500);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.action-btn:not(.disabled):hover {
+  background-color: var(--primary-blue);
+  opacity: 0.9;
+}
+
+.search-section {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid var(--border-slate-200);
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: var(--bg-slate-50);
+}
+
+.create-assessment-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.gap-results {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: visible;
+  margin-bottom: 1rem;
+}
+
+.gap-results h2 {
+  font-size: 16px;
+  color: var(--text-slate-900);
+  margin-bottom: 1.8rem;
+}
+
+.gap-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding:2rem 1rem 1rem 1rem;
+  background-color: var(--bg-white);
+  border-radius: 8px;
+  border: 1px solid var(--border-slate-200);
+  transition: all 0.1s ease;
+  gap:20px;
+  position: relative;
+  margin-bottom: 1.8rem;
+}
+
+.gap-item.selected {
+  border-left: 4px solid var(--primary-blue);
+}
+
+.gap-info {
+  flex: 1;
+}
+
+.gap-info h3 {
+  font-size: 16px;
+  color: var(--text-slate-900);
+  margin: 0 0 0.5rem 0;
+  /* Ellipses CSS for title overflow */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 500px;
+}
+.gap-metrics-container{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 350px;
+}
+.gap-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.department {
+  background-color: var(--bg-slate-100);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-slate-600);
+}
+
+.gap-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  width: 140px;
+}
+
+.gap-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.details-btn {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.delete-btn {
+  padding: 0.5rem 1rem;
+  background-color: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.details-btn:hover {
+  background-color: var(--primary-blue);
+  opacity: 0.9;
+}
+
+.delete-btn:hover {
+  background-color: #ff5252;
+}
+
+.delete-btn:disabled {
+  background-color: #bec0c2;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.results-table {
+  height: auto;
+  max-height: 500px;
+  overflow-y: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background-color: white;
+  margin-bottom: 1rem;
+}
+
+.result-row {
+  display: none; /* Hide the old design */
+}
+
+.pagination {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  color: #6c63ff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.pagination-btn:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 1024px) {
+  .compliance-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .result-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .compliance-overview {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gap-analysis-page {
+  display: flex;
+  min-height: 100vh;
+}
+
+.gap-analysis-content {
+  flex: 1;
+  padding: 2rem;
+  background-color: #f8f9fa;
+}
+
+.gap-analysis-content h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.assessment-results {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.assessment-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.assessment-row {
+  border-bottom: 1px solid #eee;
+}
+
+.assessment-row:last-child {
+  border-bottom: none;
+}
+
+.assessment-title,
+.assessment-department,
+.assessment-compliance,
+.assessment-priority,
+.assessment-actions {
+  padding: 1rem;
+  text-align: left;
+}
+
+.assessment-title {
+  font-weight: 500;
+  color: #333;
+}
+
+.assessment-department {
+  color: #666;
+}
+
+.assessment-compliance {
+  color: #666;
+}
+
+.assessment-priority {
+  color: #666;
+}
+
+.details-button {
+  background-color: #6c63ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.details-button:hover {
+  background-color: #5b52e0;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.error-message {
+  text-align: center;
+  padding: 2rem;
+  color: #d32f2f;
+}
+
+.no-results {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+} 
+
+.no-details{
+  color: #666;
+  font-style: italic; 
+  font-size: 12px;
+}
+
+/* Add styles for the gap metrics */
+.gap-metric {
+  display: inline-flex;
+  align-items: center;
+
+  font-size: 14px;
+width: 150px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.metric-label {
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.metric-value {
+  font-weight: 600;
+}
+
+.total-gaps {
+  color: #555;
+}
+
+
+
+.high-priority .metric-label,.high-priority .metric-value {
+  color: var(--severity-high-text);
+}
+
+.medium-priority .metric-label,.medium-priority .metric-value {
+  color: var(--severity-medium-text);
+
+}
+
+.low-priority .metric-label,.low-priority .metric-value {
+  color: var(--severity-low-text);
+}
+
+/* Update styling for the analysis date to accommodate time */
+.analysis-date {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #666;
+  background-color: #e1e1e1;
+  border-radius: 12px;
+  position: absolute;
+  top: -12px;
+  left: 0;
+  white-space: nowrap;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.analysis-date::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #6c63ff;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.analysis-date.analyzed::before {
+  background-color: var(--severity-medium-text);
+}
+/* Add styles for the filter and sort controls */
+.filter-sort-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  background-color: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  gap: 16px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-group label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sort-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.sort-btn {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.sort-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.sort-btn.active {
+  background-color: #6c63ff;
+  color: white;
+}
+
+.sort-direction {
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.filter-select {
+  padding: 6px 2rem 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 1rem;
+  min-width: 140px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Add styling for the reset filters button */
+.reset-filters-btn {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.reset-filters-btn::before {
+  content: '↺';
+  font-size: 16px;
+}
+
+.reset-filters-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.reset-filters-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  background-color: #f8f8f8;
+}
+
+/* Responsive adjustment for mobile */
+@media (max-width: 768px) {
+  .reset-filters-btn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Add a class for distinguishing non-analyzed items */
+.analysis-date.no-analysis {
+  background-color: #f8f8f8;
+  color: #999;
+}
+
+.analysis-date.no-analysis::before {
+  background-color: #aaa;
+}
+
+.processing-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6c63ff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.processing-state .loading-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  border-color: rgba(108, 99, 255, 0.3);
+  border-top-color: #6c63ff;
+}
+
+.processing-text {
+  color: #6c63ff;
+  font-size: 12px;
+}
+
+/* Custom instant tooltip styles */
+.custom-tooltip {
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: tooltipFadeIn 0.1s ease-out;
+  max-width: 400px;
+  word-wrap: break-word;
+  white-space: normal;
+  position: relative;
+}
+
+.custom-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+  margin-top: 0;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Smooth blinking animation for highlighted existing assessment */
+@keyframes highlightBlink {
+  0%, 100% {
+    background-color: #e6f0ff;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 8px rgba(96, 165, 250, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    background-color: #e0f2fe;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    transform: scale(1.02);
+  }
+}
+
+.gap-item.highlighted-blink {
+  animation: highlightBlink 1.2s ease-in-out 3;
+  border: 1px solid var(--primary-blue);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}

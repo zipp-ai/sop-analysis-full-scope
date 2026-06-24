@@ -1,0 +1,277 @@
+/* Main container for the regulation dropdown widget */
+.regulation-dropdown-widget {
+  position: relative;
+  margin-bottom: 0;
+  transition: margin-bottom 0.2s ease; /* Smooth transition for dynamic changes */
+}
+
+/* Main display area showing selected regulations or placeholder */
+.selected-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  background-color: var(--bg-slate-50, #f8f9fa);
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+  transition: border-color 0.2s ease;
+}
+
+.selected-display:hover {
+  border-color: #ccc;
+}
+
+.selected-display.disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.selected-display[aria-expanded="true"] .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Placeholder text */
+.placeholder {
+  color: #999;
+  font-size: 14px;
+}
+
+/* Dropdown arrow */
+.dropdown-arrow {
+  color: #666;
+  font-size: 12px;
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  line-height: 16px;
+}
+
+.selected-display:hover .dropdown-arrow {
+  color: #6c63ff;
+}
+
+/* Container for selected regulation tags */
+.selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+/* Individual regulation tag */
+.regulation-tag {
+  display: flex;
+  align-items: center;
+  background-color: #e6e4ff;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: #6c63ff;
+  gap: 4px;
+}
+
+/* Remove tag button */
+.remove-tag {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6c63ff;
+  font-size: 16px;
+  margin-left: 4px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.remove-tag:hover {
+  color: #5a52e0;
+}
+
+.remove-tag:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Dropdown menu container */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background-color: white;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Search input container */
+.dropdown-search {
+  padding: 0;
+  border-bottom: 1px solid #e1e1e1;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.dropdown-search input {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  font-size: 14px;
+  background-color: #f8f8f8;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.dropdown-search input:focus {
+  outline: none;
+  border-color: #6c63ff;
+  box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+}
+
+/* Options container */
+.dropdown-options {
+  max-height: 250px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Individual regulation option */
+.regulation-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+}
+
+.regulation-option:last-child {
+  border-bottom: none;
+}
+
+.regulation-option:hover {
+  background-color: #f0f0f7;
+}
+
+.regulation-option.selected {
+  background-color: #e6e4ff;
+  color: #6c63ff;
+  font-weight: 500;
+}
+
+/* Option content layout */
+.regulation-option-content {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Checkbox styling */
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c63ff;
+  font-size: 12px;
+  background-color: white;
+  flex-shrink: 0;
+}
+
+.regulation-option.selected .checkbox {
+  background-color: #6c63ff;
+  border-color: #6c63ff;
+  color: white;
+}
+
+/* Regulation title */
+.regulation-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Loading state */
+.dropdown-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+.dropdown-loading .loading-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* Message states (error, no results, etc.) */
+.dropdown-message {
+  padding: 12px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.dropdown-message.error {
+  color: #d32f2f;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .selected-tags {
+    gap: 4px;
+  }
+  
+  .regulation-tag {
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+  
+  .dropdown-menu {
+    max-height: 200px;
+  }
+  
+  .dropdown-options {
+    max-height: 150px;
+  }
+}

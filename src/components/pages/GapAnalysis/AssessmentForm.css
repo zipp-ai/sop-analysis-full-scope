@@ -1,0 +1,596 @@
+.assessment-form {
+  color: #333;
+  padding: 0 1rem;
+  max-height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.assessment-form h2 {
+  font-size: 20px;
+  margin: 0 0 2rem 0;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section h3 {
+  font-size: 16px;
+  color: #333;
+  margin: 0 0 1rem 0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #f8f8f8;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.assessment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  position: sticky;
+
+  background-color: white;
+  z-index: 10000;
+  bottom: 0;
+}
+
+/* .btn-cancel {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  color: #6c63ff;
+  cursor: pointer;
+  font-size: 14px;
+} */
+
+.btn-save {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: 1px solid #6c63ff;
+  color: #6c63ff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-create {
+  padding: 0.75rem 1.5rem;
+  background-color: #6c63ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-cancel:hover {
+  text-decoration: underline;
+}
+
+.btn-save:hover {
+  background-color: #f8f7ff;
+}
+
+.btn-create:hover {
+  background-color: #5b52e0;
+}
+.checkbox-input{
+  width: 20px !important;
+}
+.sop-selector,
+.regulation-selector {
+  position: relative;
+  margin-bottom: 0;
+  transition: margin-bottom 0.2s ease; /* Smooth transition for dynamic changes */
+}
+
+/* Remove fixed margin - will be handled dynamically by JavaScript */
+/* .sop-selector.dropdown-open,
+.regulation-selector.dropdown-open {
+  margin-bottom: 230px;
+} */
+
+.regulation-option{
+  display: flex;
+  gap: 10px;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.assessment-form .checkmark{
+  margin-right: 0px;
+    margin-left: 2px;
+    padding: 2px;
+    background: none;
+    border: none;
+}
+.selected-sop-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  background-color: var(--bg-slate-50);
+  cursor: pointer;
+
+}
+
+.selected-sop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.clear-sop {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 18px;
+  margin-left: 8px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.clear-sop:hover {
+  color: #333;
+}
+
+.radio-button {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c63ff;
+  font-size: 16px;
+  background-color: white;
+}
+
+.sop-option.selected .radio-button {
+  background-color: white;
+  border-color: #6c63ff;
+  color: #6c63ff;
+  font-weight: bold;
+}
+
+.placeholder {
+  color: #999;
+}
+
+.dropdown-arrow {
+  color: #666;
+  font-size: 12px;
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  line-height: 16px;
+}
+
+.selected-sop-display:hover .dropdown-arrow {
+  color: #6c63ff;
+}
+
+.selected-sop-display[aria-expanded="true"] .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.selected-sops-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.sop-tag {
+  display: flex;
+  align-items: center;
+  background-color: #e6e4ff;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: #6c63ff;
+  gap: 4px;
+
+}
+.remove-tag{
+  background: none;
+  border: none;
+  cursor: pointer;
+
+}
+
+.remove-sop {
+  background: none;
+  border: none;
+  color: #6c63ff;
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 6px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sop-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background-color: white;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sop-search {
+  padding: 8px;
+  border-bottom: 1px solid #e1e1e1;
+}
+
+.sop-search input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #e1e1e1;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.sop-options {
+  overflow-y: auto;
+  max-height: 240px;
+}
+
+.sop-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sop-option:last-child {
+  border-bottom: none;
+}
+
+.sop-option:hover {
+  background-color: #f0f0f7;
+}
+
+.sop-option.selected {
+  background-color: #e6e4ff;
+  color: #6c63ff;
+  font-weight: 500;
+}
+
+.sop-option-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sop-title {
+  /* flex: 1; */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sop-date {
+  font-size: 12px;
+  color: #888;
+  margin-left: 8px;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c63ff;
+  font-size: 12px;
+  background-color: white;
+}
+
+.sop-option.selected .checkbox {
+  background-color: #6c63ff;
+  border-color: #6c63ff;
+  color: white;
+}
+
+.dropdown-loading,
+.dropdown-error,
+.no-results {
+  /* padding: 12px; */
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.dropdown-error {
+  color: #d32f2f;
+}
+
+.simple-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  background-color: #f8f8f8;
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+}
+
+.simple-select:hover {
+  border-color: #ccc;
+}
+
+.simple-select:focus {
+  outline: none;
+  border-color: #6c63ff;
+  box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+}
+
+.selected-value {
+  color: #333;
+}
+
+.dropdown-menu {
+  position: absolute;
+  margin-top: 0px !important;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background-color: white;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-options {
+  /* Remove height restrictions and scrolling */
+}
+
+.dropdown-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.dropdown-option:hover {
+  background-color: #f5f5f5;
+}
+
+.dropdown-option.selected {
+  background-color: #f0f0ff;
+  color: #6c63ff;
+}
+
+.dropdown-message {
+  padding: 12px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.dropdown-message.error {
+  color: #d32f2f;
+}
+
+.btn-save-draft {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: 1px solid #6c63ff;
+  color: #6c63ff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.btn-save-draft:hover {
+  background-color: #f8f7ff;
+}
+
+.dropdown-menu.debug {
+  border: 2px solid red;
+  background-color: rgba(255, 0, 0, 0.1);
+}
+
+.department-selector {
+  position: relative;
+}
+
+.button-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.button-loading .loading-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.create-assessment-btn {
+  background-color: #6c63ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.create-assessment-btn:hover:not(:disabled):not(.creating) {
+  background-color: #5a52e0;
+}
+
+.create-assessment-btn:disabled,
+.create-assessment-btn.creating,
+.create-assessment-btn.disabled {
+  background-color: #a5a5a5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.create-assessment-btn.disabled:hover {
+  background-color: #a5a5a5; /* Prevent hover effects when disabled */
+}
+
+/* Style for the spinner inside the button */
+.create-assessment-btn .loading-spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
+.dropdown-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+.dropdown-loading .loading-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* Add styles for the dropdown search */
+.dropdown-search {
+  padding: 0;
+  border-bottom: 1px solid #e1e1e1;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.dropdown-search input {
+  width: 100%;
+  padding: 12px 12px;
+  border: none;
+  border-bottom: 1px solid #e1e1e1;
+  border-radius: 6px 6px 0 0;
+  font-size: 14px;
+  background-color: #f8f8f8;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.dropdown-search input:focus {
+  outline: none;
+  border-color: #6c63ff;
+  box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+}
+
+/* Adjust the dropdown options container for scrolling */
+/* .dropdown-options {
+  max-height: 250px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+} */
+
+.assessment-form form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+} 

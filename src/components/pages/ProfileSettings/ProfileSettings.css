@@ -1,0 +1,954 @@
+.profile-settings {
+  margin-top: 2rem;
+  padding: 0 2rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 2rem auto;
+  box-sizing: border-box;
+}
+
+/* Loading container styles */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  gap: 1rem;
+}
+
+.loading-text {
+  font-size: 1.1rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.profile-header h1 {
+  font-size: 24px;
+  color: #333;
+  margin: 0;
+}
+
+.profile-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  position: absolute;
+  right: 10px;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+  width: 100%;
+  /* padding: 0 1rem; */
+}
+
+.settings-section h2 {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.profile-header-line {
+  width: 100%;
+    background: rgb(243, 243, 243);
+    border: none;
+    height: 1px;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.profile-settings .form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: var(--bg-slate-50);
+  box-sizing: border-box;
+}
+
+.form-group input::placeholder {
+  color: #999;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+}
+
+.toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.toggle-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #f8f7ff;
+  border-radius: 6px;
+}
+
+.toggle-item label {
+  font-size: 14px;
+  color: #333;
+}
+
+/* Toggle Switch Styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+.switch input:checked + .slider {
+  background-color: #6c63ff;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.selected-standards {
+  font-size: 14px;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.btn-save, .btn-cancel {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 160px;
+  text-align: center;
+}
+
+.profile-settings .btn-save {
+  padding: 0.75rem 1.5rem;
+  background-color: #6c63ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.btn-save:hover:not(:disabled) {
+  background-color: #5b52e0;
+}
+
+.btn-save:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background-color: #a5a5a5;
+  color: white;
+  border: none;
+}
+
+.btn-cancel {
+  background-color: transparent;
+  color: #6c63ff;
+  border: none;
+}
+
+.btn-cancel:hover {
+  color: #5a52e0;
+  background-color: rgba(108, 99, 255, 0.05);
+}
+
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
+  .profile-settings {
+    padding: 0 1.5rem;
+    margin: 1.5rem auto;
+  }
+
+  .profile-header h1 {
+    font-size: 22px;
+  }
+
+  .settings-section h2 {
+    font-size: 15px;
+  }
+
+  .btn-save, .btn-cancel {
+    min-width: 140px;
+    padding: 10px 20px;
+    font-size: 15px;
+  }
+}
+
+/* Mobile breakpoint */
+@media (max-width: 768px) {
+  .profile-settings {
+    padding: 0 1rem;
+    margin: 1rem auto;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    position: relative;
+  }
+
+  .profile-header h1 {
+    font-size: 20px;
+  }
+
+  .profile-image {
+    position: static;
+    margin-bottom: 0.5rem;
+    width: 64px;
+    height: 64px;
+  }
+
+  .settings-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .settings-section h2 {
+    font-size: 14px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .profile-settings .form-group input,
+  .upload-form input[type="file"],
+  .upload-form textarea {
+    font-size: 13px;
+    padding: 0.65rem;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .btn-save, .btn-cancel {
+    width: 100%;
+    min-width: unset;
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .toggle-item {
+    padding: 0.5rem;
+  }
+
+  .toggle-item label {
+    font-size: 13px;
+  }
+
+  .category-left span {
+    font-size: 13px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+
+  .section-header > div:first-child {
+    width: 100%;
+  }
+
+  .section-header > div:last-child {
+    width: 100%;
+  }
+
+  .section-header .btn-save {
+    width: 100%;
+  }
+
+  .admin-notice p {
+    font-size: 13px;
+  }
+
+  .upload-form {
+    padding: 15px;
+  }
+
+  .section-description {
+    font-size: 13px;
+  }
+}
+
+/* Small mobile breakpoint */
+@media (max-width: 480px) {
+  .profile-settings {
+    padding: 0 0.75rem;
+    margin: 0.75rem auto;
+    margin-top: 1rem;
+  }
+
+  .profile-header h1 {
+    font-size: 18px;
+  }
+
+  .settings-section {
+    margin-bottom: 1.25rem;
+  }
+
+  .settings-section h2 {
+    font-size: 13px;
+  }
+
+  .form-group {
+    margin-bottom: 0.75rem;
+  }
+
+  .form-group label {
+    font-size: 12px;
+    margin-bottom: 0.4rem;
+  }
+
+  .profile-settings .form-group input,
+  .upload-form input[type="file"],
+  .upload-form textarea {
+    font-size: 12px;
+    padding: 0.6rem;
+  }
+
+  .btn-save, .btn-cancel {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .profile-settings .btn-save {
+    padding: 0.65rem 1.25rem;
+    font-size: 13px;
+  }
+
+  .toggle-item {
+    padding: 0.4rem;
+  }
+
+  .toggle-item label {
+    font-size: 12px;
+  }
+
+  .category-left {
+    gap: 8px;
+  }
+
+  .category-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .category-left span {
+    font-size: 12px;
+  }
+
+  .checkbox-container {
+    font-size: 12px;
+    padding-left: 24px;
+  }
+
+  .profile-settings .checkmark {
+    height: 16px;
+    width: 16px;
+  }
+
+  .profile-settings .checkbox-container .checkmark:after {
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+  }
+
+  .admin-only-badge {
+    font-size: 11px;
+    padding: 1px 6px;
+    margin-left: 6px;
+  }
+
+  .form-actions {
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .upload-form {
+    padding: 12px;
+  }
+
+  .upload-form .form-group {
+    margin-bottom: 15px;
+  }
+}
+
+/* Add these styles to your existing CSS */
+
+.product-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0px;
+  /* background-color: #f8f7ff; */
+  border-radius: 8px;
+}
+
+.category-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-icon {
+  width: 32px;
+  height: 32px;
+  background-color: #F7F6FF;
+  border-radius: 8px;
+}
+
+.category-left span {
+  color: #333;
+  font-size: 14px;
+}
+
+/* Toggle Switch Styles */
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch label {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e1e1e1;
+  transition: .4s;
+  border-radius: 20px;
+}
+
+.toggle-switch label:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + label {
+  background-color: #6c63ff;
+}
+
+.toggle-switch input:checked + label:before {
+  transform: translateX(16px);
+}
+
+/* Add this to your existing CSS */
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 16px;
+  color: #666;
+}
+
+.error-message {
+  background-color: #ffe6e6;
+  color: #d32f2f;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 14px;
+}
+
+/* Update the regulations list styling - Three column layout */
+.profile-settings .regulations-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 30px;
+  margin-top: 16px;
+  position: relative;
+}
+
+/* Add column separators */
+.profile-settings .regulations-list::before,
+.profile-settings .regulations-list::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: #e1e5e9;
+  z-index: 1;
+}
+
+.profile-settings .regulations-list::before {
+  left: 32.333%;
+}
+
+.profile-settings .regulations-list::after {
+  left: 66.666%;
+}
+
+.profile-settings .regulation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 24px;
+  break-inside: avoid; /* Prevent breaking across columns if using CSS columns */
+  padding-right: 8px;
+}
+
+.profile-settings .checkbox-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+  color: #333;
+  position: relative;
+  padding-left: 28px; /* Make room for the checkbox */
+  line-height: 18px; /* Match checkmark height for proper alignment */
+  flex: 1;
+  margin-right: 12px; /* Add space between regulation name and delete button */
+}
+
+.profile-settings .checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.profile-settings .checkmark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 18px;
+  width: 18px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+
+.profile-settings .checkbox-container:hover input ~ .checkmark {
+  background-color: #f5f5f5;
+}
+
+.profile-settings .checkbox-container input:checked ~ .checkmark {
+  background-color: #6c63ff;
+  border-color: #6c63ff;
+}
+
+.profile-settings .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.profile-settings .checkbox-container input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.profile-settings .checkbox-container .checkmark:after {
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.profile-settings .section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.profile-settings .section-header h2 {
+  margin: 0;
+}
+
+.profile-settings .section-header .loading-spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+.loading-message {
+  color: #666;
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+/* Add button loading styles */
+.button-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.button-loading .loading-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
+/* Improve styles for disabled checkboxes */
+.checkbox-container input:disabled ~ .checkmark {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+  cursor: not-allowed;
+}
+
+.checkbox-container input:disabled ~ .checkmark:after {
+  border-color: #adb5bd;
+}
+
+/* Make the entire label show not-allowed cursor when checkbox is disabled */
+.checkbox-container input:disabled ~ .checkmark,
+.checkbox-container input:disabled ~ span,
+.regulation-item:has(input:disabled) {
+  cursor: not-allowed !important;
+}
+
+/* Style for the regulation item text when disabled */
+.checkbox-container input:disabled ~ span {
+  color: #6c757d;
+  opacity: 0.8;
+}
+
+/* Add a subtle visual indication that the item is disabled */
+.regulation-item:has(input:disabled) {
+  opacity: 0.85;
+}
+
+/* Ensure the admin-only badge is properly styled */
+.admin-only-badge {
+  font-size: 12px;
+  background-color: #e9ecef;
+  color: #6c757d;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: normal;
+  margin-left: 8px;
+  display: inline-block;
+}
+
+/* Make the regulations heading display properly */
+.regulations-heading {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* Admin notice styling */
+.admin-notice {
+  background-color: #f8f9fa;
+  border-left: 3px solid #6c757d;
+  padding: 10px 15px;
+  margin-bottom: 20px;
+  border-radius: 0 4px 4px 0;
+}
+
+.admin-notice p {
+  margin: 0;
+  font-size: 14px;
+  color: #495057;
+}
+
+/* Upload section styles */
+.upload-form {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.section-description {
+  color: #6c757d;
+  font-size: 14px;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.upload-form .form-group {
+  margin-bottom: 20px;
+}
+
+.upload-form input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  border: 2px dashed #dee2e6;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.upload-form input[type="file"]:hover {
+  border-color: #007bff;
+}
+
+.upload-form input[type="file"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.upload-form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+  box-sizing: border-box;
+  display: block;
+  margin: 0;
+}
+
+.upload-form textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-help {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+
+  color: #6c757d;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.upload-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-upload {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-upload:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.btn-upload:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.button-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Delete regulation button styles */
+.regulation-item {
+  position: relative;
+}
+
+.delete-regulation-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+.delete-regulation-btn:hover:not(:disabled) {
+  background-color: rgba(220, 53, 69, 0.1);
+  transform: scale(1.15);
+}
+
+.delete-regulation-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.delete-icon {
+  width: 12px;
+  height: 12px;
+  color: #dc3545;
+  transition: all 0.2s ease;
+}
+
+.delete-regulation-btn:hover:not(:disabled) .delete-icon {
+  color: #c82333;
+}
+
+/* CSS to prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Responsive breakpoints for regulations list */
+@media (max-width: 1024px) {
+  .profile-settings .regulations-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 24px;
+  }
+  
+  /* Update column separators for 2 columns */
+  .profile-settings .regulations-list::before {
+    left: calc(50% + 12px);
+  }
+  
+  .profile-settings .regulations-list::after {
+    display: none; /* Hide second separator in 2-column layout */
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-settings .regulations-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  /* Hide all separators in single column */
+  .profile-settings .regulations-list::before,
+  .profile-settings .regulations-list::after {
+    display: none;
+  }
+}
+
+

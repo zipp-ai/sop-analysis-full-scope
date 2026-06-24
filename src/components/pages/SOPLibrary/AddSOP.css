@@ -1,0 +1,434 @@
+.add-sop-form {
+  color: var(--text-slate-900);
+}
+
+.add-sop-form h2 {
+  font-size: 20px;
+  margin: 0 0 1.5rem 0;
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.add-sop-container .form-group input,
+.add-sop-container .form-group textarea,
+.department-selected-display,
+.department-option,
+.department-search input,
+.file-info-bar span,
+.generic-file-preview p,
+.no-results,
+.placeholder,
+.selected-value,
+.department-dropdown input,
+.department-options,
+.dropdown-option,
+.file-info-bar,
+.file-name,
+.file-size,
+.change-file-btn,
+.submit-btn,
+.cancel-btn {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.department-selected-display {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-slate-200);
+  border-radius: 6px;
+  background-color: var(--bg-slate-50);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+  color: var(--text-slate-600);
+}
+
+.department-selected-display:not(:has(span.selected-value)) {
+  color: var(--text-slate-400);
+}
+
+.placeholder {
+  color: var(--text-slate-400);
+}
+
+.selected-value {
+  color: var(--text-slate-900);
+}
+
+.add-sop-container .form-group input,
+.add-sop-container .form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-slate-200);
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: var(--bg-slate-50);
+  box-sizing: border-box;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-section {
+  margin-top: 2rem;
+}
+
+.form-section h3 {
+  font-size: 16px;
+  margin-bottom: 1rem;
+}
+
+.upload-area {
+  border: 2px dashed var(--border-slate-200);
+  border-radius: 6px;
+  padding: 2rem;
+  background-color: var(--stat-blue-bg);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.upload-area.has-file {
+  border-color: var(--primary-blue);
+  background-color: var(--primary-blue-light);
+}
+
+.upload-area:hover {
+  border-color: var(--primary-blue);
+}
+
+.upload-icon {
+  width: 40px;
+  height: 40px;
+  background-color: var(--primary-blue-hover);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-area p {
+  color: var(--text-slate-600);
+  margin-bottom: 1rem;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.browse-btn {
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.browse-btn:hover {
+  background-color: var(--primary-blue);
+  opacity: 0.9;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn-cancel {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  color: var(--primary-blue);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-upload {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-cancel:hover {
+  text-decoration: underline;
+}
+
+.btn-upload:hover {
+  background-color: var(--primary-blue);
+  opacity: 0.9;
+}
+
+.error-message {
+  background-color: var(--severity-high-bg);
+  color: var(--severity-high-text);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 14px;
+}
+
+.btn-upload:disabled, 
+.btn-cancel:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.file-preview-container {
+  border: 1px solid var(--border-slate-200);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.file-info-bar {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: var(--bg-slate-100);
+  border-bottom: 1px solid var(--border-slate-200);
+  font-size: 14px;
+}
+
+.file-info-bar span:first-child {
+  font-weight: 500;
+  margin-right: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+
+.file-info-bar span:nth-child(2) {
+  color: var(--text-slate-600);
+  margin-right: auto;
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  color: var(--text-slate-600);
+  font-size: 20px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-left: 8px;
+  transition: color 0.2s ease;
+}
+
+.remove-file-btn:hover {
+  color: var(--severity-high-text);
+}
+
+.pdf-preview-container {
+  height: 400px;
+  overflow: hidden;
+}
+
+.pdf-preview {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.generic-file-preview {
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--bg-slate-50);
+  color: var(--text-slate-600);
+  border-radius: 6px;
+}
+
+.generic-file-preview p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.change-file {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.change-file-btn {
+  background: none;
+  border: none;
+  color: var(--primary-blue);
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+.change-file-btn:hover {
+  opacity: 0.8;
+}
+
+.department-loading {
+  padding: 0.75rem;
+  color: var(--text-slate-600);
+  font-style: italic;
+  text-align: center;
+  background-color: var(--bg-slate-50);
+  border-radius: 6px;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-slate-200);
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: var(--bg-white);
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1em;
+  box-sizing: border-box;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: var(--focus-ring);
+}
+
+.form-group select option {
+  padding: 0.5rem;
+}
+
+.department-dropdown-container {
+  position: relative;
+}
+
+.dropdown-arrow {
+  font-size: 12px;
+}
+
+.department-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-white);
+  border: 1px solid var(--border-slate-200);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 210px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.department-search {
+  padding: 0;
+  border-bottom: 1px solid #e1e1e1;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.department-search input {
+  width: 100%;
+  padding: 12px 12px;
+  border: none;
+  border-bottom: 1px solid #e1e1e1;
+  border-radius: 6px 6px 0 0;
+  font-size: 14px;
+  background-color: #f8f8f8;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.department-search input:focus {
+  outline: none;
+  border-color: #6c63ff;
+  box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+}
+
+.department-options {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.department-option {
+  padding: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.department-option:hover {
+  background-color: var(--hover-slate-50);
+}
+
+.department-option.selected {
+  background-color: var(--primary-blue-hover);
+  color: var(--primary-blue);
+  font-weight: 500;
+}
+
+.no-results {
+  padding: 10px;
+  text-align: center;
+  color: var(--text-slate-600);
+  font-style: italic;
+}
+
+.submit-btn{
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+  justify-content: center;
+    display: flex;
+    gap: 10px;
+}
+
+.cancel-btn {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  color: var(--text-slate-600);
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 6px;
+}
