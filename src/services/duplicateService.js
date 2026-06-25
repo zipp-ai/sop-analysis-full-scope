@@ -125,6 +125,27 @@ const duplicateService = {
     return data;
   },
 
+  // Update SOP document metadata
+  async updateSOPDocument(sopId, updates) {
+    const { data, error } = await supabase
+      .from('sop_documents')
+      .update({
+        title: updates.title,
+        sop_code: updates.sop_code || null,
+        version: updates.version || null,
+        department: updates.department || null,
+        site: updates.site || 'Global',
+        category_id: updates.category_id || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sopId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
   // Delete an analysis and all its pairs/clusters
   async deleteAnalysis(analysisId) {
     const { error } = await supabase
