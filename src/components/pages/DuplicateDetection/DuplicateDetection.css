@@ -803,6 +803,100 @@
   color: #ef4444;
 }
 
+/* Analysis Config Dialog */
+.analysis-config h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 18px;
+  color: #1e293b;
+}
+
+.config-field {
+  margin-bottom: 1.25rem;
+}
+
+.config-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 0.375rem;
+}
+
+.config-input, .config-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+
+.config-select { background: white; }
+
+.sop-select-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.select-all-btn {
+  background: none;
+  border: none;
+  color: #6c63ff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sop-select-list {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.25rem;
+}
+
+.sop-select-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+
+.sop-select-item:hover { background: #f8fafc; }
+
+.sop-select-item input[type="checkbox"] {
+  accent-color: #6c63ff;
+  width: 16px;
+  height: 16px;
+}
+
+.sop-select-title { flex: 1; color: #1e293b; }
+.sop-select-code { font-size: 11px; color: #94a3b8; }
+
+.config-warning {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 13px;
+  color: #92400e;
+  margin-bottom: 1rem;
+}
+
+.config-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
 .status-identical { background: #fef2f2; color: #dc2626; }
 .status-similar { background: #fffbeb; color: #d97706; }
 .status-partial { background: #f0f9ff; color: #0284c7; }

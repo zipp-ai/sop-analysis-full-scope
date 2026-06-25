@@ -2,6 +2,7 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import Login from "../components/pages/Login/Login";
 import Dashboard from "../components/pages/Dashboard/Dashboard";
+import SOPManager from "../components/pages/SOPManager/SOPManager";
 import DuplicateDetection from "../components/pages/DuplicateDetection/DuplicateDetection";
 import ProtectedRoute from "../components/common/ProtectedRoute/ProtectedRoute";
 import NotFound from "../components/NotFound";
@@ -15,77 +16,14 @@ const PlaceholderPage = ({ title, description }) => (
 );
 
 const routes = (user) => [
-  {
-    path: "/login",
-    element: user ? <Navigate to="/dashboard" replace /> : <Login />,
-  },
-  {
-    path: "/dashboard",
-    element: (
-      <ProtectedRoute user={user}>
-        <Layout>
-          <Dashboard />
-        </Layout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/sop-library",
-    element: (
-      <ProtectedRoute user={user}>
-        <Layout>
-          <PlaceholderPage
-            title="SOP Library"
-            description="SOPs are managed in the Duplicates page. Go to Duplicates to upload and manage SOPs."
-          />
-        </Layout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/duplicates",
-    element: (
-      <ProtectedRoute user={user}>
-        <Layout>
-          <DuplicateDetection />
-        </Layout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/simplification",
-    element: (
-      <ProtectedRoute user={user}>
-        <Layout>
-          <PlaceholderPage
-            title="Simplification"
-            description="Coming soon — Actionability scoring, flowchart generation, and readability analysis."
-          />
-        </Layout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/monitoring",
-    element: (
-      <ProtectedRoute user={user}>
-        <Layout>
-          <PlaceholderPage
-            title="Regulatory Monitoring"
-            description="Coming soon — SOP-to-regulation mapping, compliance tracking, and gap detection."
-          />
-        </Layout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/",
-    element: <Navigate to={user ? "/dashboard" : "/login"} replace />,
-  },
-  {
-    path: "*",
-    element: <NotFound />,
-  },
+  { path: "/login", element: user ? <Navigate to="/dashboard" replace /> : <Login /> },
+  { path: "/dashboard", element: <ProtectedRoute user={user}><Layout><Dashboard /></Layout></ProtectedRoute> },
+  { path: "/sop-library", element: <ProtectedRoute user={user}><Layout><SOPManager /></Layout></ProtectedRoute> },
+  { path: "/duplicates", element: <ProtectedRoute user={user}><Layout><DuplicateDetection /></Layout></ProtectedRoute> },
+  { path: "/simplification", element: <ProtectedRoute user={user}><Layout><PlaceholderPage title="Simplification" description="Coming soon — Actionability scoring, flowchart generation, and readability analysis." /></Layout></ProtectedRoute> },
+  { path: "/monitoring", element: <ProtectedRoute user={user}><Layout><PlaceholderPage title="Regulatory Monitoring" description="Coming soon — SOP-to-regulation mapping, compliance tracking, and gap detection." /></Layout></ProtectedRoute> },
+  { path: "/", element: <Navigate to={user ? "/dashboard" : "/login"} replace /> },
+  { path: "*", element: <NotFound /> },
 ];
 
 export default routes;
