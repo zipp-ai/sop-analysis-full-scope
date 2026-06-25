@@ -7,6 +7,7 @@ import duplicateService from "../../../services/duplicateService";
 import toastService from "../../../services/toastService";
 import supabase from "../../../supabase";
 import { formatDate } from "../../../utils/dateUtils";
+import BulkUpload from "./BulkUpload";
 import "./DuplicateDetection.css";
 
 const STATUS_LABELS = {
@@ -34,14 +35,6 @@ const DuplicateDetection = () => {
   const [userId, setUserId] = useState(null);
   const [filterClassification, setFilterClassification] = useState("all");
 
-  // Upload form state
-  const [uploadForm, setUploadForm] = useState({
-    title: "",
-    sopCode: "",
-    version: "",
-    department: "",
-    rawText: "",
-  });
   const [uploading, setUploading] = useState(false);
 
   // Get user and org info
@@ -119,38 +112,9 @@ const DuplicateDetection = () => {
     }
   };
 
-  const handleUploadSOP = async (e) => {
-    e.preventDefault();
-    if (!uploadForm.title.trim() || !uploadForm.rawText.trim()) {
-      toastService.error("Title and content are required");
-      return;
-    }
-
-    try {
-      setUploading(true);
-      const doc = await duplicateService.uploadSOP({
-        title: uploadForm.title,
-        sopCode: uploadForm.sopCode,
-        version: uploadForm.version,
-        department: uploadForm.department,
-        fileUrl: "manual-entry",
-        rawText: uploadForm.rawText,
-        organizationId,
-        userId,
-      });
-
-      // Trigger processing
-      await duplicateService.processSOP(doc.id);
-
-      toastService.success("SOP uploaded and processed successfully");
-      setShowUploadModal(false);
-      setUploadForm({ title: "", sopCode: "", version: "", department: "", rawText: "" });
-      await fetchData();
-    } catch (err) {
-      toastService.error("Upload failed: " + err.message);
-    } finally {
-      setUploading(false);
-    }
+  const handleBulkUploadComplete = async () => {
+    setShowUploadModal(false);
+    await fetchData();
   };
 
   const handleDeleteSOP = async () => {
@@ -285,7 +249,7 @@ const DuplicateDetection = () => {
               className="upload-sop-btn"
               onClick={() => setShowUploadModal(true)}
             >
-              Add SOP
+              Bulk Upload
             </button>
           </div>
           {pairs.length > 0 && (
@@ -501,81 +465,18 @@ const DuplicateDetection = () => {
         )}
       </div>
 
-      {/* Upload Modal */}
+      {/* Bulk Upload Modal */}
       <Modal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
-        closeOnOutsideClick={!uploading}
-        isProcessing={uploading}
+        closeOnOutsideClick={false}
       >
-        <h3 style={{ margin: "0 0 1.5rem 0", fontSize: "18px", color: "#1e293b" }}>
-          Add SOP for Analysis
-        </h3>
-        <form className="upload-form" onSubmit={handleUploadSOP}>
-          <div className="form-group">
-            <label>SOP Title *</label>
-            <input
-              type="text"
-              value={uploadForm.title}
-              onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
-              placeholder="e.g., Cleaning of Equipment in Tablet Manufacturing"
-              required
-            />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>SOP Code</label>
-              <input
-                type="text"
-                value={uploadForm.sopCode}
-                onChange={(e) => setUploadForm({ ...uploadForm, sopCode: e.target.value })}
-                placeholder="e.g., SOP-MFG-001"
-              />
-            </div>
-            <div className="form-group">
-              <label>Version</label>
-              <input
-                type="text"
-                value={uploadForm.version}
-                onChange={(e) => setUploadForm({ ...uploadForm, version: e.target.value })}
-                placeholder="e.g., 3.0"
-              />
-            </div>
-          </div>
-          <div className="form-group">
-            <label>Department</label>
-            <select
-              value={uploadForm.department}
-              onChange={(e) => setUploadForm({ ...uploadForm, department: e.target.value })}
-            >
-              <option value="">Select Department</option>
-              <option value="Quality Assurance">Quality Assurance</option>
-              <option value="Quality Control">Quality Control</option>
-              <option value="Manufacturing">Manufacturing</option>
-              <option value="Packaging">Packaging</option>
-              <option value="Warehouse">Warehouse</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Regulatory Affairs">Regulatory Affairs</option>
-              <option value="Human Resources">Human Resources</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>SOP Content (paste full text) *</label>
-            <textarea
-              value={uploadForm.rawText}
-              onChange={(e) => setUploadForm({ ...uploadForm, rawText: e.target.value })}
-              placeholder="Paste the full SOP text content here..."
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="submit-btn"
-            disabled={uploading || !uploadForm.title || !uploadForm.rawText}
-          >
-            {uploading ? "Processing..." : "Upload & Process"}
-          </button>
-        </form>
+        <BulkUpload
+          organizationId={organizationId}
+          userId={userId}
+          onComplete={handleBulkUploadComplete}
+          onClose={() => setShowUploadModal(false)}
+        />
       </Modal>
 
       {/* Delete Confirmation */}

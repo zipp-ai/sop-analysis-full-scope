@@ -27,6 +27,7 @@ async function callEdgeFunction(functionName, body) {
 const edgeFunctionService = {
   processSOP: (sopId) => callEdgeFunction('process-sop', { sop_id: sopId }),
   detectDuplicates: (organizationId) => callEdgeFunction('detect-duplicates', { organization_id: organizationId }),
+  extractMetadata: (rawText, fileName) => callEdgeFunction('extract-metadata', { raw_text: rawText, file_name: fileName }),
 };
 
 export default edgeFunctionService;
