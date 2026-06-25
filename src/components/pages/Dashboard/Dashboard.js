@@ -1,107 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import Navigation from '../../common/Navigation/Navigation';
-import Layout from '../../common/Layout/Layout';
 import LoadingSpinner from '../../common/LoadingSpinner/LoadingSpinner';
-import userService from '../../../services/userService';
-import { formatDate } from '../../../utils/dateUtils';
+import supabase from '../../../supabase';
 import './Dashboard.css';
-import toastService from '../../../services/toastService';
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState({
-    sops: true,
-    regulations: true,
-    gaps: true,
-    activities: true
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalSOPs: 0,
+    readySOPs: 0,
+    duplicateClusters: 0,
+    analysesRun: 0,
   });
-  const [recentActivities, setRecentActivities] = useState([]);
-
-  const [stats, setStats] = useState([
-    { title: 'Total SOPs', value: '...', color: '#666', loading: true },
-    { title: 'Total Regulations', value: '...', color: '#f39c12', loading: true },
-    { title: "Identified Gaps", value: '...', color: '#d63031', loading: true },
-  ]);
 
   useEffect(() => {
-    const fetchSOPCount = async () => {
+    const fetchStats = async () => {
       try {
-        const data = await userService.getSOPsCount();
-        const totalSopCount = data.total_count.toString();
+        const [sopsRes, analysesRes, clustersRes] = await Promise.all([
+          supabase.from('sop_documents').select('id, status', { count: 'exact' }),
+          supabase.from('duplicate_analyses').select('id', { count: 'exact' }),
+          supabase.from('duplicate_clusters').select('id', { count: 'exact' }),
+        ]);
 
-        setStats(prevStats => {
-          const newStats = [...prevStats];
-          newStats[0] = { ...newStats[0], value: totalSopCount, loading: false };
-          return newStats;
+        const sops = sopsRes.data || [];
+        setStats({
+          totalSOPs: sopsRes.count || 0,
+          readySOPs: sops.filter(s => s.status === 'ready').length,
+          duplicateClusters: clustersRes.count || 0,
+          analysesRun: analysesRes.count || 0,
         });
       } catch (error) {
-        console.error('Error fetching SOPs count:', error);
-        setStats(prevStats => {
-          const newStats = [...prevStats];
-          newStats[0] = { ...newStats[0], value: 'N/A', loading: false };
-          return newStats;
-        });
+        console.error('Error fetching stats:', error);
       } finally {
-        setLoading(prev => ({ ...prev, sops: false }));
+        setLoading(false);
       }
     };
 
-    const fetchRegulationsCount = async () => {
-      try {
-        const data = await userService.getRegulationsCount();
-        setStats(prevStats => {
-          const newStats = [...prevStats];
-          newStats[1] = { ...newStats[1], value: data.count.toString(), loading: false };
-          return newStats;
-        });
-      } catch (error) {
-        console.error('Error fetching regulations count:', error);
-        setStats(prevStats => {
-          const newStats = [...prevStats];
-          newStats[1] = { ...newStats[1], value: 'N/A', loading: false };
-          return newStats;
-        });
-      } finally {
-        setLoading(prev => ({ ...prev, regulations: false }));
-      }
-    };
-
-    const fetchGapCount = async () => {
-      try {
-        const data = await userService.getGapCount();
-        setStats(prevStats => {
-          const newStats = [...prevStats];
-          newStats[2] = { ...newStats[2], value: data.count.toString(), loading: false };
-          return newStats;
-        });
-      } catch (error) {
-        console.error('Error fetching gap count:', error);
-        setStats(prevStats => {
-          const newStats = [...prevStats];
-          newStats[2] = { ...newStats[2], value: 'N/A', loading: false };
-          return newStats;
-        });
-      } finally {
-        setLoading(prev => ({ ...prev, gaps: false }));
-      }
-    };
-
-    const fetchActivitiesData = async () => {
-      try {
-        const activities = await userService.getRecentActivity();
-        setRecentActivities(activities.recent_activities);
-      } catch (error) {
-        console.error('Error fetching recent activities:', error);
-        setRecentActivities([]);
-      } finally {
-        setLoading(prev => ({ ...prev, activities: false }));
-      }
-    };
-
-    fetchSOPCount();
-    fetchRegulationsCount();
-    fetchGapCount();
-    fetchActivitiesData();
+    fetchStats();
   }, []);
+
+  const statCards = [
+    { title: 'Total SOPs', value: stats.totalSOPs, color: '#6c63ff' },
+    { title: 'Processed SOPs', value: stats.readySOPs, color: '#22c55e' },
+    { title: 'Analyses Run', value: stats.analysesRun, color: '#f59e0b' },
+    { title: 'Duplicate Clusters', value: stats.duplicateClusters, color: '#ef4444' },
+  ];
 
   return (
     <div className="dashboard">
@@ -109,15 +52,15 @@ const Dashboard = () => {
       <main className="dashboard-content">
         <div className="welcome-section">
           <h2>Welcome back</h2>
-          <p>Here's what's happening in your organization</p>
+          <p>SOP Lifecycle Intelligence — Duplicate Detection, Simplification & Regulatory Monitoring</p>
         </div>
 
         <div className="stats-grid">
-          {stats.map((stat, index) => (
+          {statCards.map((stat, index) => (
             <div key={index} className="stat-card">
               <h3>{stat.title}</h3>
               <div className="stat-value-container">
-                {stat.loading ? (
+                {loading ? (
                   <LoadingSpinner size="small" />
                 ) : (
                   <p style={{ color: stat.color }}>{stat.value}</p>
@@ -127,29 +70,33 @@ const Dashboard = () => {
           ))}
         </div>
 
-
-
-
         <div className="recent-updates">
-          <h3>Recent Activities</h3>
+          <h3>Pipeline Stages</h3>
           <div className="updates-list">
-            {loading.activities ? (
-              <div className="activity-loading">
-                <LoadingSpinner size="small" />
-                <span>Loading recent activities...</span>
-              </div>
-            ) : recentActivities.length > 0 ? (
-              recentActivities.map((activity, index) => (
-                <div key={index} className="update-item">
-                  <span className="update-text" style={{ width: '50%', textAlign: 'left' }}>{activity?.title}</span>
-                  <span className="update-time" style={{ width: '50%', textAlign: 'right' }}>{formatDate(activity?.timestamp)}</span>
-                </div>
-              ))
-            ) : (
-              <div className="no-activities">
-                <span className="update-text">No recent activities found</span>
-              </div>
-            )}
+            <div className="update-item">
+              <span className="update-text" style={{ width: '50%', textAlign: 'left' }}>
+                Stage 1: Duplicate Detection
+              </span>
+              <span className="update-time" style={{ width: '50%', textAlign: 'right', color: '#22c55e' }}>
+                Active
+              </span>
+            </div>
+            <div className="update-item">
+              <span className="update-text" style={{ width: '50%', textAlign: 'left' }}>
+                Stage 2: Simplification
+              </span>
+              <span className="update-time" style={{ width: '50%', textAlign: 'right', color: '#94a3b8' }}>
+                Coming Soon
+              </span>
+            </div>
+            <div className="update-item">
+              <span className="update-text" style={{ width: '50%', textAlign: 'left' }}>
+                Stage 3: Regulatory Monitoring
+              </span>
+              <span className="update-time" style={{ width: '50%', textAlign: 'right', color: '#94a3b8' }}>
+                Coming Soon
+              </span>
+            </div>
           </div>
         </div>
       </main>
