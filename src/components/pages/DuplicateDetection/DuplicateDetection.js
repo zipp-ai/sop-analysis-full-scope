@@ -8,6 +8,7 @@ import toastService from "../../../services/toastService";
 import supabase from "../../../supabase";
 import { formatDate } from "../../../utils/dateUtils";
 import BulkUpload from "./BulkUpload";
+import SimilarityHeatmap from "./SimilarityHeatmap";
 import "./DuplicateDetection.css";
 
 const STATUS_LABELS = {
@@ -358,10 +359,13 @@ const DuplicateDetection = () => {
               </button>
             </div>
 
+            {/* Similarity Heatmap — always shown */}
+            <SimilarityHeatmap pairs={pairs} sopDocs={sopDocs} />
+
             {clusters.length === 0 && filteredPairs.length === 0 ? (
-              <div className="empty-state">
-                <h3>No Duplicates Found</h3>
-                <p>All SOPs appear to be distinct. Great job keeping your SOP library clean!</p>
+              <div className="empty-state" style={{ padding: "2rem" }}>
+                <h3>No Duplicates Flagged</h3>
+                <p>No SOP pairs exceeded the duplicate threshold. Review the heatmap above for detailed similarity scores.</p>
               </div>
             ) : (
               <div className="cluster-list">
