@@ -10,12 +10,8 @@ import { formatDate } from "../../../utils/dateUtils";
 import "./DuplicateDetection.css";
 
 const STATUS_LABELS = {
-  pending: "Pending",
-  running_layer1: "Analyzing Titles...",
-  running_layer2: "Comparing Embeddings...",
-  running_layer3: "AI Classification...",
-  completed: "Completed",
-  failed: "Failed",
+  pending: "Pending", running_layer1: "Analyzing Titles...", running_layer2: "Comparing Embeddings...",
+  running_layer3: "AI Classification...", completed: "Completed", failed: "Failed",
 };
 
 const DuplicateDetection = () => {
@@ -30,9 +26,8 @@ const DuplicateDetection = () => {
   const [expandedClusters, setExpandedClusters] = useState({});
   const [showAnalysisConfig, setShowAnalysisConfig] = useState(false);
   const [organizationId, setOrganizationId] = useState(null);
-  const [filterClassification, setFilterClassification] = useState("all");
 
-  // Analysis config state
+  // Analysis config
   const [analysisName, setAnalysisName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSopIds, setSelectedSopIds] = useState([]);
@@ -41,429 +36,249 @@ const DuplicateDetection = () => {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setOrganizationId(user.user_metadata?.organization_id || user.id);
-      }
+      if (user) setOrganizationId(user.user_metadata?.organization_id || user.id);
     };
     init();
   }, []);
 
-  useEffect(() => {
-    if (organizationId) fetchData();
-  }, [organizationId]);
+  useEffect(() => { if (organizationId) fetchData(); }, [organizationId]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [docs, cats, analysisHistory] = await Promise.all([
+      const [docs, cats, hist] = await Promise.all([
         duplicateService.getSOPDocuments(organizationId),
         duplicateService.getCategories(),
         duplicateService.getAnalyses(organizationId),
       ]);
-      setSopDocs(docs || []);
-      setCategories(cats || []);
-      setAnalyses(analysisHistory || []);
-
-      const latest = (analysisHistory || []).find((a) => a.status === "completed");
-      if (latest) await loadAnalysisResults(latest);
-    } catch (err) {
-      toastService.error("Failed to load data: " + err.message);
-    } finally {
-      setLoading(false);
-    }
+      setSopDocs(docs || []); setCategories(cats || []); setAnalyses(hist || []);
+    } catch (err) { toastService.error("Failed to load: " + err.message); }
+    finally { setLoading(false); }
   };
 
   const loadAnalysisResults = async (analysis) => {
     try {
       setSelectedAnalysis(analysis);
-      const [pairsData, clustersData] = await Promise.all([
-        duplicateService.getPairs(analysis.id),
-        duplicateService.getClusters(analysis.id),
-      ]);
-      setPairs(pairsData || []);
-      setClusters(clustersData || []);
-    } catch (err) {
-      toastService.error("Failed to load results: " + err.message);
-    }
+      const [p, c] = await Promise.all([duplicateService.getPairs(analysis.id), duplicateService.getClusters(analysis.id)]);
+      setPairs(p || []); setClusters(c || []);
+    } catch (err) { toastService.error("Failed to load results: " + err.message); }
   };
 
-  // SOPs filtered by selected category for the config dialog
+  const handleCloseResults = () => { setSelectedAnalysis(null); setPairs([]); setClusters([]); };
+
   const sopsInCategory = useMemo(() => {
     if (!selectedCategory) return [];
     return sopDocs.filter(d => d.category_id === selectedCategory && d.status === "ready");
   }, [sopDocs, selectedCategory]);
 
-  const handleOpenAnalysisConfig = () => {
-    setAnalysisName("");
-    setSelectedCategory("");
-    setSelectedSopIds([]);
-    setSelectAllInCategory(true);
-    setShowAnalysisConfig(true);
-  };
+  const handleOpenConfig = () => { setAnalysisName(""); setSelectedCategory(""); setSelectedSopIds([]); setSelectAllInCategory(true); setShowAnalysisConfig(true); };
 
   const handleCategoryChange = (catId) => {
     setSelectedCategory(catId);
     setSelectAllInCategory(true);
-    const sops = sopDocs.filter(d => d.category_id === catId && d.status === "ready");
-    setSelectedSopIds(sops.map(s => s.id));
+    setSelectedSopIds(sopDocs.filter(d => d.category_id === catId && d.status === "ready").map(s => s.id));
   };
 
-  const toggleSopSelection = (sopId) => {
-    setSelectAllInCategory(false);
-    setSelectedSopIds(prev =>
-      prev.includes(sopId) ? prev.filter(id => id !== sopId) : [...prev, sopId]
-    );
-  };
-
-  const toggleSelectAll = () => {
-    if (selectAllInCategory) {
-      setSelectedSopIds([]);
-      setSelectAllInCategory(false);
-    } else {
-      setSelectedSopIds(sopsInCategory.map(s => s.id));
-      setSelectAllInCategory(true);
-    }
-  };
+  const toggleSop = (id) => { setSelectAllInCategory(false); setSelectedSopIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]); };
+  const toggleAll = () => { if (selectAllInCategory) { setSelectedSopIds([]); setSelectAllInCategory(false); } else { setSelectedSopIds(sopsInCategory.map(s => s.id)); setSelectAllInCategory(true); } };
 
   const handleRunAnalysis = async () => {
-    if (selectedSopIds.length < 2) {
-      toastService.error("Select at least 2 SOPs to analyze");
-      return;
-    }
-
-    setShowAnalysisConfig(false);
-    setAnalyzing(true);
-    toastService.info("Duplicate analysis started in background...");
-
+    if (selectedSopIds.length < 2) { toastService.error("Select at least 2 SOPs"); return; }
+    setShowAnalysisConfig(false); setAnalyzing(true);
+    toastService.info("Duplicate analysis started...");
     duplicateService.runAnalysis(organizationId)
-      .then((result) => {
-        toastService.success(
-          `Analysis complete: ${result.flagged_pairs} potential duplicates found in ${result.clusters} clusters`
-        );
-        fetchData();
-      })
-      .catch((err) => {
-        toastService.error("Analysis failed: " + err.message);
-      })
-      .finally(() => {
-        setAnalyzing(false);
-      });
+      .then((r) => { toastService.success(`Analysis complete: ${r.flagged_pairs} duplicates in ${r.clusters} clusters`); fetchData(); })
+      .catch((e) => toastService.error("Analysis failed: " + e.message))
+      .finally(() => setAnalyzing(false));
   };
 
   const handleDecision = async (pairId, decision) => {
-    try {
-      await duplicateService.updatePairDecision(pairId, decision);
-      setPairs((prev) =>
-        prev.map((p) => (p.id === pairId ? { ...p, user_decision: decision } : p))
-      );
-      toastService.success("Decision saved");
-    } catch (err) {
-      toastService.error("Failed to save decision");
-    }
+    try { await duplicateService.updatePairDecision(pairId, decision); setPairs(prev => prev.map(p => p.id === pairId ? { ...p, user_decision: decision } : p)); toastService.success("Saved"); } catch { toastService.error("Failed"); }
   };
 
-  const handleDeleteAnalysis = async (analysisId) => {
-    try {
-      await duplicateService.deleteAnalysis(analysisId);
-      toastService.success("Analysis deleted");
-      if (selectedAnalysis?.id === analysisId) {
-        setSelectedAnalysis(null);
-        setPairs([]);
-        setClusters([]);
-      }
-      await fetchData();
-    } catch (err) {
-      toastService.error("Delete failed: " + err.message);
-    }
+  const handleDeleteAnalysis = async (id) => {
+    try { await duplicateService.deleteAnalysis(id); toastService.success("Deleted"); if (selectedAnalysis?.id === id) handleCloseResults(); await fetchData(); } catch (e) { toastService.error("Delete failed: " + e.message); }
   };
 
-  const handleDeleteAllAnalyses = async () => {
-    try {
-      await duplicateService.deleteAllAnalyses(organizationId);
-      toastService.success("All analyses deleted");
-      setSelectedAnalysis(null);
-      setPairs([]);
-      setClusters([]);
-      await fetchData();
-    } catch (err) {
-      toastService.error("Delete failed: " + err.message);
-    }
+  const handleDeleteAll = async () => {
+    try { await duplicateService.deleteAllAnalyses(organizationId); toastService.success("All deleted"); handleCloseResults(); await fetchData(); } catch (e) { toastService.error(e.message); }
   };
 
-  const toggleCluster = (clusterId) => {
-    setExpandedClusters((prev) => ({ ...prev, [clusterId]: !prev[clusterId] }));
-  };
+  const toggleCluster = (id) => setExpandedClusters(prev => ({ ...prev, [id]: !prev[id] }));
+  const getScoreClass = (s) => s >= 0.85 ? "high" : s >= 0.6 ? "medium" : "low";
 
-  const getScoreClass = (score) => {
-    if (score >= 0.85) return "high";
-    if (score >= 0.6) return "medium";
-    return "low";
-  };
+  const categoryCounts = useMemo(() => {
+    const c = {}; sopDocs.forEach(d => { if (d.category_id) c[d.category_id] = (c[d.category_id] || 0) + 1; }); return c;
+  }, [sopDocs]);
 
   const pairsByCluster = useMemo(() => {
     const map = {};
-    for (const cluster of clusters) {
-      const clusterSopIds = new Set(cluster.sop_ids);
-      map[cluster.id] = pairs.filter(
-        (p) => clusterSopIds.has(p.sop_a_id) && clusterSopIds.has(p.sop_b_id)
-      );
-    }
-    const clusteredPairIds = new Set(Object.values(map).flat().map((p) => p.id));
-    const unclustered = pairs.filter((p) => !clusteredPairIds.has(p.id) && p.llm_classification !== "distinct");
-    if (unclustered.length > 0) map["unclustered"] = unclustered;
+    clusters.forEach(cl => { const ids = new Set(cl.sop_ids); map[cl.id] = pairs.filter(p => ids.has(p.sop_a_id) && ids.has(p.sop_b_id)); });
+    const used = new Set(Object.values(map).flat().map(p => p.id));
+    const unc = pairs.filter(p => !used.has(p.id) && p.llm_classification !== "distinct");
+    if (unc.length > 0) map["unclustered"] = unc;
     return map;
   }, [pairs, clusters]);
 
-  const readySops = sopDocs.filter((s) => s.status === "ready").length;
-
-  // Count SOPs per category
-  const categoryCounts = useMemo(() => {
-    const counts = {};
-    for (const doc of sopDocs) {
-      if (doc.category_id) {
-        counts[doc.category_id] = (counts[doc.category_id] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [sopDocs]);
+  const readySops = sopDocs.filter(s => s.status === "ready").length;
+  const isViewOpen = !!selectedAnalysis;
 
   if (loading) {
-    return (
-      <div className="duplicate-detection">
-        <Navigation />
-        <div className="duplicate-content">
-          <div className="loading-container">
-            <LoadingSpinner size="large" />
-            <span className="loading-text">Loading...</span>
-          </div>
-        </div>
-      </div>
-    );
+    return (<div className="duplicate-detection"><Navigation /><div className="duplicate-content"><div className="loading-container"><LoadingSpinner size="large" /><span className="loading-text">Loading...</span></div></div></div>);
   }
 
   return (
     <div className="duplicate-detection">
       <Navigation />
-      <div className="duplicate-content">
-        <div className="page-header">
-          <h2>Duplicate Detection</h2>
-          <span className="subtitle">Stage 1 — Identify and resolve duplicate SOPs</span>
-        </div>
+      <div className={`duplicate-content ${isViewOpen ? "split-view" : ""}`}>
+        {/* LEFT: Analysis List */}
+        <div className={`analysis-list-panel ${isViewOpen ? "compact" : ""}`}>
+          <div className="page-header">
+            <h2>{isViewOpen ? "Analyses" : "Duplicate Detection"}</h2>
+            {!isViewOpen && <span className="subtitle">Stage 1 — Identify and resolve duplicate SOPs</span>}
+          </div>
 
-        {/* Stats */}
-        <div className="stats-overview">
-          <div className="stat-card">
-            <h4>Total SOPs</h4>
-            <p className="stat-value">{sopDocs.length}</p>
-            <p className="stat-label">{readySops} ready for analysis</p>
-          </div>
-          <div className="stat-card">
-            <h4>Analyses Run</h4>
-            <p className="stat-value">{analyses.length}</p>
-          </div>
-          <div className="stat-card">
-            <h4>Flagged Pairs</h4>
-            <p className="stat-value">{selectedAnalysis?.flagged_pairs || 0}</p>
-          </div>
-          <div className="stat-card">
-            <h4>Clusters Found</h4>
-            <p className="stat-value">{selectedAnalysis?.cluster_count || 0}</p>
-          </div>
-        </div>
-
-        {/* Action Bar */}
-        <div className="action-bar">
-          <div className="action-bar-left">
-            <button
-              className="run-analysis-btn"
-              onClick={handleOpenAnalysisConfig}
-              disabled={analyzing || readySops < 2}
-            >
-              {analyzing ? (
-                <><LoadingSpinner size="small" /> Analyzing...</>
-              ) : (
-                "Run Duplicate Analysis"
-              )}
-            </button>
-          </div>
-          {pairs.length > 0 && (
-            <select
-              className="filter-select"
-              value={filterClassification}
-              onChange={(e) => setFilterClassification(e.target.value)}
-            >
-              <option value="all">All Classifications</option>
-              <option value="full_duplicate">Full Duplicates</option>
-              <option value="partial_overlap">Partial Overlaps</option>
-              <option value="version_variant">Version Variants</option>
-              <option value="distinct">Distinct</option>
-            </select>
+          {!isViewOpen && (
+            <div className="stats-overview">
+              <div className="stat-card"><h4>Total SOPs</h4><p className="stat-value">{sopDocs.length}</p><p className="stat-label">{readySops} ready</p></div>
+              <div className="stat-card"><h4>Analyses</h4><p className="stat-value">{analyses.length}</p></div>
+              <div className="stat-card"><h4>Total Flagged</h4><p className="stat-value">{analyses.reduce((s, a) => s + (a.flagged_pairs || 0), 0)}</p></div>
+            </div>
           )}
-        </div>
 
-        {/* Analysis Progress */}
-        {analyzing && (
-          <div className="analysis-progress">
-            <div className="progress-spinner" />
-            <div className="progress-info">
-              <h4>Running Duplicate Detection</h4>
-              <p>Comparing SOPs within selected category...</p>
-            </div>
+          <div className="action-bar">
+            <button className="run-analysis-btn" onClick={handleOpenConfig} disabled={analyzing || readySops < 2}>
+              {analyzing ? <><LoadingSpinner size="small" /> Analyzing...</> : "New Analysis"}
+            </button>
+            {analyses.length > 1 && <button className="clear-all-btn" onClick={handleDeleteAll}>Clear All</button>}
           </div>
-        )}
 
-        {/* Results */}
-        {selectedAnalysis && selectedAnalysis.status === "completed" && (
-          <div className="results-section">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-              <h3 style={{ margin: 0 }}>
-                Duplicate Analysis Results
-                <span style={{ fontWeight: 400, fontSize: "13px", color: "#64748b", marginLeft: "0.75rem" }}>
-                  {formatDate(selectedAnalysis.completed_at)} · {selectedAnalysis.total_sops} SOPs · {selectedAnalysis.flagged_pairs} flagged
-                </span>
-              </h3>
-              <button className="delete-analysis-btn" onClick={() => handleDeleteAnalysis(selectedAnalysis.id)}>
-                Delete This Analysis
-              </button>
+          {analyzing && (
+            <div className="analysis-progress-sm">
+              <LoadingSpinner size="small" /><span>Running analysis...</span>
             </div>
+          )}
 
-            {/* Similarity Heatmap */}
-            <SimilarityHeatmap pairs={pairs} sopDocs={sopDocs} />
-
-            {clusters.length === 0 ? (
-              <div className="empty-state" style={{ padding: "2rem" }}>
-                <h3>No Duplicates Flagged</h3>
-                <p>No SOP pairs exceeded the duplicate threshold. Review the heatmap above for detailed similarity scores.</p>
+          {/* Analysis list */}
+          <div className="analysis-items">
+            {analyses.length === 0 && !analyzing ? (
+              <div className="empty-state-sm">
+                {sopDocs.length === 0 ? "Upload SOPs first from the SOPs tab." : "No analyses yet. Click New Analysis to start."}
               </div>
             ) : (
-              <div className="cluster-list" style={{ marginTop: "1.5rem" }}>
-                {clusters.map((cluster) => {
-                  const clusterPairs = pairsByCluster[cluster.id] || [];
-                  const isExpanded = expandedClusters[cluster.id];
-                  const maxScore = clusterPairs.length > 0
-                    ? Math.max(...clusterPairs.map((p) => p.overall_score || 0)) : 0;
+              analyses.map((a) => (
+                <div
+                  key={a.id}
+                  className={`analysis-card ${selectedAnalysis?.id === a.id ? "active" : ""}`}
+                  onClick={() => loadAnalysisResults(a)}
+                >
+                  <div className="analysis-card-top">
+                    <span className={`status-badge ${a.status}`}>{STATUS_LABELS[a.status] || a.status}</span>
+                    <button className="card-delete-btn" onClick={(e) => { e.stopPropagation(); handleDeleteAnalysis(a.id); }}>×</button>
+                  </div>
+                  <div className="analysis-card-title">{a.name || "Untitled Analysis"}</div>
+                  {a.category?.category_name && (
+                    <span className="analysis-card-category">{a.category.category_name}</span>
+                  )}
+                  <div className="analysis-card-meta">
+                    <span>{a.total_sops || 0} SOPs</span>
+                    <span>{a.flagged_pairs || 0} flagged</span>
+                    <span>{a.cluster_count || 0} clusters</span>
+                  </div>
+                  <div className="analysis-card-date">{formatDate(a.created_at)}</div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
 
-                  return (
-                    <div key={cluster.id} className="cluster-card">
-                      <div className="cluster-header" onClick={() => toggleCluster(cluster.id)}>
-                        <div className="cluster-header-left">
-                          <div className={`cluster-icon ${getScoreClass(maxScore)}`}>{cluster.sop_ids.length}</div>
-                          <div>
-                            <div className="cluster-title">{cluster.cluster_name || `Cluster of ${cluster.sop_ids.length} SOPs`}</div>
-                            <div className="cluster-meta">{clusterPairs.length} comparison{clusterPairs.length !== 1 ? "s" : ""} · Max similarity: {Math.round(maxScore * 100)}%</div>
+        {/* RIGHT: Analysis Results */}
+        {isViewOpen && (
+          <div className="analysis-results-panel">
+            <div className="results-panel-header">
+              <div>
+                <h3>{selectedAnalysis.name || "Analysis Results"}</h3>
+                <span className="results-meta">
+                  {selectedAnalysis.category?.category_name && <>{selectedAnalysis.category.category_name} · </>}
+                  {formatDate(selectedAnalysis.completed_at)} · {selectedAnalysis.total_sops} SOPs · {selectedAnalysis.flagged_pairs} flagged
+                </span>
+              </div>
+              <div className="results-header-actions">
+                <button className="delete-analysis-btn" onClick={() => handleDeleteAnalysis(selectedAnalysis.id)}>Delete</button>
+                <button className="exit-view-btn" onClick={handleCloseResults}>Exit View</button>
+              </div>
+            </div>
+
+            {selectedAnalysis.status === "completed" ? (
+              <>
+                <SimilarityHeatmap pairs={pairs} sopDocs={sopDocs} />
+
+                {clusters.length === 0 ? (
+                  <div className="empty-state-sm" style={{ marginTop: "1.5rem" }}>
+                    No duplicates flagged. Review the heatmap for similarity scores.
+                  </div>
+                ) : (
+                  <div className="cluster-list" style={{ marginTop: "1.5rem" }}>
+                    {clusters.map((cluster) => {
+                      const cp = pairsByCluster[cluster.id] || [];
+                      const exp = expandedClusters[cluster.id];
+                      const maxScore = cp.length > 0 ? Math.max(...cp.map(p => p.overall_score || 0)) : 0;
+                      return (
+                        <div key={cluster.id} className="cluster-card">
+                          <div className="cluster-header" onClick={() => toggleCluster(cluster.id)}>
+                            <div className="cluster-header-left">
+                              <div className={`cluster-icon ${getScoreClass(maxScore)}`}>{cluster.sop_ids.length}</div>
+                              <div>
+                                <div className="cluster-title">{cluster.cluster_name || `Cluster`}</div>
+                                <div className="cluster-meta">{cp.length} comparison{cp.length !== 1 ? "s" : ""} · Max: {Math.round(maxScore * 100)}%</div>
+                              </div>
+                            </div>
+                            <div className="cluster-header-right">
+                              {cluster.recommended_action && <span className={`action-badge ${cluster.recommended_action}`}>{cluster.recommended_action.replace("_", " ")}</span>}
+                              <span className={`expand-icon ${exp ? "expanded" : ""}`}>▾</span>
+                            </div>
                           </div>
+                          {exp && <div className="cluster-body">{cp.map(pair => <PairCard key={pair.id} pair={pair} onDecision={handleDecision} getScoreClass={getScoreClass} />)}</div>}
                         </div>
-                        <div className="cluster-header-right">
-                          {cluster.recommended_action && (
-                            <span className={`action-badge ${cluster.recommended_action}`}>{cluster.recommended_action.replace("_", " ")}</span>
-                          )}
-                          <span className={`expand-icon ${isExpanded ? "expanded" : ""}`}>▾</span>
-                        </div>
-                      </div>
-                      {isExpanded && (
-                        <div className="cluster-body">
-                          {clusterPairs.map((pair) => (
-                            <PairCard key={pair.id} pair={pair} sopDocs={sopDocs} onDecision={handleDecision} getScoreClass={getScoreClass} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="empty-state-sm" style={{ marginTop: "2rem" }}>
+                Analysis is {selectedAnalysis.status}. Results will appear when complete.
               </div>
             )}
           </div>
         )}
-
-        {/* No SOPs state */}
-        {sopDocs.length === 0 && !analyzing && (
-          <div className="empty-state">
-            <h3>No SOPs Available</h3>
-            <p>Go to the SOPs tab to upload SOPs first, then come back to run duplicate analysis.</p>
-          </div>
-        )}
-
-        {/* Analysis History */}
-        {analyses.length > 0 && (
-          <div className="analysis-history">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3>Analysis History</h3>
-              {analyses.length > 1 && (
-                <button className="clear-all-btn" onClick={handleDeleteAllAnalyses}>Clear All</button>
-              )}
-            </div>
-            {analyses.map((analysis) => (
-              <div key={analysis.id} className={`history-item ${selectedAnalysis?.id === analysis.id ? "active" : ""}`}>
-                <div
-                  className="history-item-main"
-                  onClick={() => loadAnalysisResults(analysis)}
-                  style={{ flex: 1, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                >
-                  <div className="history-meta">
-                    <span className={`status-badge ${analysis.status}`}>{STATUS_LABELS[analysis.status] || analysis.status}</span>
-                    <span className="history-date">{formatDate(analysis.created_at)}</span>
-                  </div>
-                  <div className="history-stats">
-                    <span>{analysis.total_sops} SOPs</span>
-                    <span>{analysis.flagged_pairs} flagged</span>
-                    <span>{analysis.cluster_count} clusters</span>
-                  </div>
-                </div>
-                <button className="history-delete-btn" onClick={(e) => { e.stopPropagation(); handleDeleteAnalysis(analysis.id); }} title="Delete">×</button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Analysis Config Dialog */}
+      {/* Config Dialog */}
       <Modal isOpen={showAnalysisConfig} onClose={() => setShowAnalysisConfig(false)} closeOnOutsideClick={true}>
         <div className="analysis-config">
           <h3>Configure Duplicate Analysis</h3>
-
           <div className="config-field">
             <label>Analysis Name</label>
-            <input
-              type="text"
-              value={analysisName}
-              onChange={(e) => setAnalysisName(e.target.value)}
-              placeholder="e.g., Equipment SOPs - June 2026"
-              className="config-input"
-            />
+            <input type="text" value={analysisName} onChange={(e) => setAnalysisName(e.target.value)} placeholder="e.g., Equipment SOPs - June 2026" className="config-input" />
           </div>
-
           <div className="config-field">
             <label>SOP Category / Area</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="config-select"
-            >
+            <select value={selectedCategory} onChange={(e) => handleCategoryChange(e.target.value)} className="config-select">
               <option value="">Select a category...</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.category_name} ({categoryCounts[cat.id] || 0} SOPs)
-                </option>
-              ))}
+              {categories.map(cat => (<option key={cat.id} value={cat.id}>{cat.category_name} ({categoryCounts[cat.id] || 0} SOPs)</option>))}
             </select>
           </div>
-
           {selectedCategory && sopsInCategory.length > 0 && (
             <div className="config-field">
               <div className="sop-select-header">
-                <label>Select SOPs ({selectedSopIds.length} of {sopsInCategory.length} selected)</label>
-                <button className="select-all-btn" onClick={toggleSelectAll}>
-                  {selectAllInCategory ? "Deselect All" : "Select All"}
-                </button>
+                <label>Select SOPs ({selectedSopIds.length} of {sopsInCategory.length})</label>
+                <button className="select-all-btn" onClick={toggleAll}>{selectAllInCategory ? "Deselect All" : "Select All"}</button>
               </div>
               <div className="sop-select-list">
-                {sopsInCategory.map((sop) => (
+                {sopsInCategory.map(sop => (
                   <label key={sop.id} className="sop-select-item">
-                    <input
-                      type="checkbox"
-                      checked={selectedSopIds.includes(sop.id)}
-                      onChange={() => toggleSopSelection(sop.id)}
-                    />
+                    <input type="checkbox" checked={selectedSopIds.includes(sop.id)} onChange={() => toggleSop(sop.id)} />
                     <span className="sop-select-title">{sop.title}</span>
                     {sop.sop_code && <span className="sop-select-code">{sop.sop_code}</span>}
                   </label>
@@ -471,22 +286,10 @@ const DuplicateDetection = () => {
               </div>
             </div>
           )}
-
-          {selectedCategory && sopsInCategory.length < 2 && (
-            <div className="config-warning">
-              This category has fewer than 2 ready SOPs. Upload more SOPs in this category from the SOPs tab.
-            </div>
-          )}
-
+          {selectedCategory && sopsInCategory.length < 2 && <div className="config-warning">Fewer than 2 ready SOPs in this category.</div>}
           <div className="config-actions">
             <button className="back-btn" onClick={() => setShowAnalysisConfig(false)}>Cancel</button>
-            <button
-              className="run-analysis-btn"
-              onClick={handleRunAnalysis}
-              disabled={selectedSopIds.length < 2}
-            >
-              Run Analysis ({selectedSopIds.length} SOPs)
-            </button>
+            <button className="run-analysis-btn" onClick={handleRunAnalysis} disabled={selectedSopIds.length < 2}>Run Analysis ({selectedSopIds.length} SOPs)</button>
           </div>
         </div>
       </Modal>
@@ -494,67 +297,47 @@ const DuplicateDetection = () => {
   );
 };
 
-// Pair Card sub-component
-const PairCard = ({ pair, sopDocs, onDecision, getScoreClass }) => {
+const PairCard = ({ pair, onDecision, getScoreClass }) => {
   const [showSections, setShowSections] = useState(false);
-  const sopA = pair.sop_a || {};
-  const sopB = pair.sop_b || {};
+  const sopA = pair.sop_a || {}; const sopB = pair.sop_b || {};
   const sections = pair.overlapping_sections || [];
 
   return (
     <div className="pair-card">
       <div className="pair-sops">
-        <div className="pair-sop">
-          <h5>{sopA.title || "SOP A"}</h5>
-          <p>{[sopA.sop_code, sopA.department, sopA.site, sopA.version && `v${sopA.version}`].filter(Boolean).join(" · ")}</p>
-        </div>
+        <div className="pair-sop"><h5>{sopA.title || "SOP A"}</h5><p>{[sopA.sop_code, sopA.department, sopA.site].filter(Boolean).join(" · ")}</p></div>
         <span className="pair-vs">vs</span>
-        <div className="pair-sop">
-          <h5>{sopB.title || "SOP B"}</h5>
-          <p>{[sopB.sop_code, sopB.department, sopB.site, sopB.version && `v${sopB.version}`].filter(Boolean).join(" · ")}</p>
-        </div>
+        <div className="pair-sop"><h5>{sopB.title || "SOP B"}</h5><p>{[sopB.sop_code, sopB.department, sopB.site].filter(Boolean).join(" · ")}</p></div>
       </div>
-
       <div className="pair-scores">
         <div className="score-item"><span className="score-label">Title:</span><span className={`score-value ${getScoreClass(pair.metadata_score)}`}>{Math.round(pair.metadata_score * 100)}%</span></div>
         <div className="score-item"><span className="score-label">Semantic:</span><span className={`score-value ${getScoreClass(pair.semantic_score)}`}>{Math.round(pair.semantic_score * 100)}%</span></div>
         <div className="score-item"><span className="score-label">Scope:</span><span className={`score-value ${getScoreClass(pair.scope_overlap_score)}`}>{Math.round(pair.scope_overlap_score * 100)}%</span></div>
-        {pair.llm_classification && (
-          <div className="score-item"><span className="score-label">AI:</span><span className={`action-badge ${pair.recommended_action}`}>{pair.llm_classification.replace("_", " ")}</span></div>
-        )}
+        {pair.llm_classification && <div className="score-item"><span className="score-label">AI:</span><span className={`action-badge ${pair.recommended_action}`}>{pair.llm_classification.replace("_", " ")}</span></div>}
       </div>
-
       {pair.llm_reasoning && <div className="pair-reasoning">{pair.llm_reasoning}</div>}
-
       {sections.length > 0 && (
         <div className="section-comparison">
-          <button className="section-toggle" onClick={() => setShowSections(!showSections)}>
-            {showSections ? "▾" : "▸"} Section-wise Comparison ({sections.length} sections)
-          </button>
+          <button className="section-toggle" onClick={() => setShowSections(!showSections)}>{showSections ? "▾" : "▸"} Section Comparison ({sections.length})</button>
           {showSections && (
             <table className="section-table">
-              <thead><tr><th>SOP A Section</th><th>SOP B Section</th><th>Similarity</th><th>Status</th></tr></thead>
-              <tbody>
-                {sections.map((sec, i) => (
-                  <tr key={i} className={`section-row section-${sec.status}`}>
-                    <td>{sec.section_a ? (<><span className="section-type-badge">{sec.section_a.type}</span><span className="section-heading">{sec.section_a.heading}</span>{sec.section_a.content_preview && <span className="section-preview">{sec.section_a.content_preview}</span>}</>) : <span className="section-missing">— Not present —</span>}</td>
-                    <td>{sec.section_b ? (<><span className="section-type-badge">{sec.section_b.type}</span><span className="section-heading">{sec.section_b.heading}</span>{sec.section_b.content_preview && <span className="section-preview">{sec.section_b.content_preview}</span>}</>) : <span className="section-missing">— Not present —</span>}</td>
-                    <td><span className={`score-value ${getScoreClass(sec.similarity)}`}>{Math.round(sec.similarity * 100)}%</span></td>
-                    <td><span className={`section-status-badge status-${sec.status}`}>{sec.status === "identical" ? "Identical" : sec.status === "similar" ? "Similar" : sec.status === "partial" ? "Partial" : sec.status === "only_in_b" ? "Only in B" : "Different"}</span></td>
-                  </tr>
-                ))}
-              </tbody>
+              <thead><tr><th>SOP A</th><th>SOP B</th><th>Score</th><th>Status</th></tr></thead>
+              <tbody>{sections.map((sec, i) => (
+                <tr key={i} className={`section-row section-${sec.status}`}>
+                  <td>{sec.section_a ? <><span className="section-type-badge">{sec.section_a.type}</span> {sec.section_a.heading}</> : <span className="section-missing">—</span>}</td>
+                  <td>{sec.section_b ? <><span className="section-type-badge">{sec.section_b.type}</span> {sec.section_b.heading}</> : <span className="section-missing">—</span>}</td>
+                  <td><span className={`score-value ${getScoreClass(sec.similarity)}`}>{Math.round(sec.similarity * 100)}%</span></td>
+                  <td><span className={`section-status-badge status-${sec.status}`}>{sec.status}</span></td>
+                </tr>
+              ))}</tbody>
             </table>
           )}
         </div>
       )}
-
       <div className="pair-actions">
         <span style={{ fontSize: "12px", color: "#64748b", marginRight: "0.5rem" }}>Decision:</span>
-        {["retire", "merge", "distinct"].map((decision) => (
-          <button key={decision} className={`decision-btn ${decision} ${pair.user_decision === decision ? "active" : ""}`} onClick={() => onDecision(pair.id, decision)}>
-            {decision.charAt(0).toUpperCase() + decision.slice(1)}
-          </button>
+        {["retire", "merge", "distinct"].map(d => (
+          <button key={d} className={`decision-btn ${d} ${pair.user_decision === d ? "active" : ""}`} onClick={() => onDecision(pair.id, d)}>{d.charAt(0).toUpperCase() + d.slice(1)}</button>
         ))}
       </div>
     </div>

@@ -64,7 +64,7 @@ const duplicateService = {
   async getAnalyses(organizationId) {
     const { data, error } = await supabase
       .from('duplicate_analyses')
-      .select('*')
+      .select('*, category:sop_categories(category_name)')
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
 
