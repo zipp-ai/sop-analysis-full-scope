@@ -230,47 +230,30 @@ const DuplicateDetection = () => {
 
             {selectedAnalysis.status === "completed" ? (
               <>
-                {/* Tabs: Analysis | Results */}
-                <div className="results-tabs">
-                  <button className={`results-tab ${activeTab === "analysis" ? "active" : ""}`} onClick={() => setActiveTab("analysis")}>
-                    Analysis
-                  </button>
-                  <button className={`results-tab ${activeTab === "results" ? "active" : ""}`} onClick={() => setActiveTab("results")}>
-                    Results
-                    {duplicateCount > 0 && <span className="tab-badge">{duplicateCount}</span>}
-                  </button>
+                {/* Analysis: Heatmap */}
+                <div className="results-section-block">
+                  <h4 className="section-heading">Similarity Analysis</h4>
+                  {analysisSops.length > 0 ? (
+                    <SimilarityHeatmap pairs={pairs} sopDocs={sopDocs} />
+                  ) : pairs.length > 0 ? (
+                    <div className="empty-state-sm">
+                      SOPs referenced by this analysis no longer exist. Delete and re-run.
+                    </div>
+                  ) : (
+                    <div className="empty-state-sm">No comparison data available.</div>
+                  )}
                 </div>
 
-                {activeTab === "analysis" ? (
-                  /* ANALYSIS TAB: Heatmap with drill-down */
-                  <div className="tab-content">
-                    {analysisSops.length > 0 ? (
-                      <SimilarityHeatmap pairs={pairs} sopDocs={sopDocs} />
-                    ) : pairs.length > 0 ? (
-                      <div className="empty-state-sm" style={{ marginTop: "1.5rem" }}>
-                        SOPs referenced by this analysis no longer exist. Please delete this analysis and run a new one.
-                      </div>
-                    ) : (
-                      <div className="empty-state-sm" style={{ marginTop: "1.5rem" }}>No comparison data available.</div>
-                    )}
-                  </div>
-                ) : (
-                  /* RESULTS TAB: SOP verdict table */
-                  <div className="tab-content">
-                    <div className="results-summary">
-                      <div className="summary-stat">
-                        <span className="summary-count" style={{ color: "#16a34a" }}>{continueCount}</span>
-                        <span className="summary-label">Continue</span>
-                      </div>
-                      <div className="summary-stat">
-                        <span className="summary-count" style={{ color: "#dc2626" }}>{duplicateCount}</span>
-                        <span className="summary-label">Mark as Duplicate</span>
-                      </div>
-                      <div className="summary-stat">
-                        <span className="summary-count">{analysisSops.length}</span>
-                        <span className="summary-label">Total SOPs</span>
-                      </div>
-                    </div>
+                {/* Results: Verdict Table */}
+                {analysisSops.length > 0 && (
+                  <div className="results-section-block">
+                    <h4 className="section-heading">
+                      Results
+                      <span className="section-heading-meta">
+                        <span style={{ color: "#16a34a" }}>{continueCount} Continue</span>
+                        <span style={{ color: "#dc2626" }}>{duplicateCount} Duplicate</span>
+                      </span>
+                    </h4>
 
                     <div className="verdict-table-container">
                       <table className="verdict-table">
@@ -288,7 +271,6 @@ const DuplicateDetection = () => {
                         <tbody>
                           {analysisSops.map((sop) => {
                             const verdict = verdicts[sop.id] || "continue";
-                            // Find max similarity for this SOP
                             const maxSim = pairs
                               .filter(p => p.sop_a_id === sop.id || p.sop_b_id === sop.id)
                               .reduce((max, p) => Math.max(max, p.semantic_score || 0, p.metadata_score || 0), 0);
@@ -302,15 +284,10 @@ const DuplicateDetection = () => {
                                 <td>{sop.site || "Global"}</td>
                                 <td>{sop.version || "—"}</td>
                                 <td>
-                                  <button
-                                    className={`verdict-btn ${verdict}`}
-                                    onClick={() => toggleVerdict(sop.id)}
-                                  >
+                                  <button className={`verdict-btn ${verdict}`} onClick={() => toggleVerdict(sop.id)}>
                                     {verdict === "continue" ? "Continue" : "Duplicate"}
                                   </button>
-                                  {maxSim > 0.5 && (
-                                    <span className="sim-hint">{Math.round(maxSim * 100)}% max sim</span>
-                                  )}
+                                  {maxSim > 0.5 && <span className="sim-hint">{Math.round(maxSim * 100)}% max sim</span>}
                                 </td>
                               </tr>
                             );
