@@ -55,7 +55,7 @@ serve(async (req: Request) => {
     // Get all ready SOPs for this org (without raw_text to save memory)
     const { data: sops, error: sopError } = await supabase
       .from("sop_documents")
-      .select("id, title, sop_code, version, department")
+      .select("id, title, sop_code, version, department, category_id")
       .eq("organization_id", organization_id)
       .eq("status", "ready");
 
@@ -90,6 +90,14 @@ serve(async (req: Request) => {
 
     for (let i = 0; i < sops.length; i++) {
       for (let j = i + 1; j < sops.length; j++) {
+        // Only compare SOPs within the same category
+        const sameCategory =
+          sops[i].category_id && sops[j].category_id &&
+          sops[i].category_id === sops[j].category_id;
+        const bothUncategorized = !sops[i].category_id && !sops[j].category_id;
+
+        if (!sameCategory && !bothUncategorized) continue;
+
         const titleSim = levenshteinRatio(sops[i].title, sops[j].title);
         let codeSim = 0;
         if (sops[i].sop_code && sops[j].sop_code) {
@@ -102,14 +110,11 @@ serve(async (req: Request) => {
 
         const metadataScore = Math.min(Math.max(titleSim, codeSim) + sameDept, 1);
 
-        // For small sets, compare all; otherwise filter
-        if (metadataScore > 0.4 || sops.length <= 30) {
-          candidatePairs.push({
-            sop_a: sops[i],
-            sop_b: sops[j],
-            metadata_score: Math.round(metadataScore * 100) / 100,
-          });
-        }
+        candidatePairs.push({
+          sop_a: sops[i],
+          sop_b: sops[j],
+          metadata_score: Math.round(metadataScore * 100) / 100,
+        });
       }
     }
 

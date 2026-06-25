@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { extractTextFromFile } from "../../../utils/fileParser";
 import edgeFunctionService from "../../../services/edgeFunctionService";
 import duplicateService from "../../../services/duplicateService";
@@ -6,25 +6,18 @@ import toastService from "../../../services/toastService";
 import LoadingSpinner from "../../common/LoadingSpinner/LoadingSpinner";
 import "./BulkUpload.css";
 
-const DEPARTMENTS = [
-  "Quality Assurance",
-  "Quality Control",
-  "Manufacturing",
-  "Packaging",
-  "Warehouse",
-  "Engineering",
-  "Regulatory Affairs",
-  "Human Resources",
-  "General",
-];
-
 const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
-  const [step, setStep] = useState("select"); // select | extracting | review | uploading
+  const [step, setStep] = useState("select");
   const [files, setFiles] = useState([]);
   const [sopEntries, setSopEntries] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [extractionProgress, setExtractionProgress] = useState({ current: 0, total: 0 });
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    duplicateService.getCategories().then(setCategories).catch(console.error);
+  }, []);
 
   const handleFileDrop = (e) => {
     e.preventDefault();
@@ -65,6 +58,9 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
           sop_code: null,
           version: null,
           department: "General",
+          category: "General",
+          category_id: null,
+          site: "Global",
           effective_date: null,
           summary: "",
         };
@@ -85,6 +81,8 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
           sopCode: metadata.sop_code || "",
           version: metadata.version || "",
           department: metadata.department || "General",
+          categoryId: metadata.category_id || null,
+          categoryName: metadata.category || "General",
           site: metadata.site || "Global",
           effectiveDate: metadata.effective_date || "",
           summary: metadata.summary || "",
@@ -99,6 +97,8 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
           sopCode: "",
           version: "",
           department: "General",
+          categoryId: null,
+          categoryName: "General",
           site: "Global",
           effectiveDate: "",
           summary: "",
@@ -114,7 +114,16 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
 
   const updateEntry = (index, field, value) => {
     setSopEntries((prev) =>
-      prev.map((entry, i) => (i === index ? { ...entry, [field]: value } : entry))
+      prev.map((entry, i) => {
+        if (i !== index) return entry;
+        const updated = { ...entry, [field]: value };
+        // Sync category name and ID
+        if (field === "categoryId") {
+          const cat = categories.find((c) => c.id === value);
+          updated.categoryName = cat?.category_name || "General";
+        }
+        return updated;
+      })
     );
   };
 
@@ -129,14 +138,13 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
       return;
     }
 
-    setStep("uploading");
-    setUploadProgress({ current: 0, total: validEntries.length });
+    // Close modal immediately — processing happens in background
+    toastService.info(`Uploading ${validEntries.length} SOPs in the background...`);
+    onComplete();
 
     let successCount = 0;
     for (let i = 0; i < validEntries.length; i++) {
-      setUploadProgress({ current: i + 1, total: validEntries.length });
       const entry = validEntries[i];
-
       try {
         const doc = await duplicateService.uploadSOP({
           title: entry.title,
@@ -144,18 +152,17 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
           version: entry.version,
           department: entry.department,
           site: entry.site,
+          categoryId: entry.categoryId,
           fileUrl: `bulk-upload/${entry.fileName}`,
           rawText: entry.rawText,
           organizationId,
           userId,
         });
 
-        // Trigger processing (embeddings)
-        try {
-          await duplicateService.processSOP(doc.id);
-        } catch (procErr) {
-          console.error("Processing failed for", entry.title, procErr);
-        }
+        // Fire-and-forget processing
+        duplicateService.processSOP(doc.id).catch((err) =>
+          console.error("Processing failed for", entry.title, err)
+        );
 
         successCount++;
       } catch (err) {
@@ -163,8 +170,7 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
       }
     }
 
-    toastService.success(`${successCount} of ${validEntries.length} SOPs uploaded and processed`);
-    onComplete();
+    toastService.success(`${successCount} SOPs uploaded. Processing embeddings in background.`);
   };
 
   const formatFileSize = (bytes) => {
@@ -181,11 +187,9 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
           {step === "select" && "Drop files or browse. Supported: PDF, DOCX, TXT"}
           {step === "extracting" && "Extracting text and metadata using AI..."}
           {step === "review" && "Review and edit metadata before uploading"}
-          {step === "uploading" && "Uploading and processing SOPs..."}
         </p>
       </div>
 
-      {/* Step 1: File Selection */}
       {step === "select" && (
         <>
           <div
@@ -229,7 +233,6 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
         </>
       )}
 
-      {/* Step 2: Extracting */}
       {step === "extracting" && (
         <div className="extraction-progress">
           <LoadingSpinner size="large" />
@@ -244,7 +247,6 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
         </div>
       )}
 
-      {/* Step 3: Review */}
       {step === "review" && (
         <>
           <div className="review-table-container">
@@ -254,10 +256,10 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
                   <th>File</th>
                   <th>Title</th>
                   <th>SOP Code</th>
-                  <th>Version</th>
+                  <th>Category</th>
                   <th>Department</th>
                   <th>Site</th>
-                  <th>Summary</th>
+                  <th>Version</th>
                   <th></th>
                 </tr>
               </thead>
@@ -290,26 +292,26 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
                       />
                     </td>
                     <td>
-                      <input
-                        type="text"
-                        value={entry.version}
-                        onChange={(e) => updateEntry(i, "version", e.target.value)}
-                        className="review-input review-input-sm"
-                        placeholder="—"
-                        disabled={entry.status === "error"}
-                      />
-                    </td>
-                    <td>
                       <select
-                        value={entry.department}
-                        onChange={(e) => updateEntry(i, "department", e.target.value)}
+                        value={entry.categoryId || ""}
+                        onChange={(e) => updateEntry(i, "categoryId", e.target.value || null)}
                         className="review-select"
                         disabled={entry.status === "error"}
                       >
-                        {DEPARTMENTS.map((d) => (
-                          <option key={d} value={d}>{d}</option>
+                        <option value="">Select Category</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.category_name}</option>
                         ))}
                       </select>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={entry.department}
+                        onChange={(e) => updateEntry(i, "department", e.target.value)}
+                        className="review-input review-input-sm"
+                        disabled={entry.status === "error"}
+                      />
                     </td>
                     <td>
                       <input
@@ -324,9 +326,9 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
                     <td>
                       <input
                         type="text"
-                        value={entry.summary}
-                        onChange={(e) => updateEntry(i, "summary", e.target.value)}
-                        className="review-input"
+                        value={entry.version}
+                        onChange={(e) => updateEntry(i, "version", e.target.value)}
+                        className="review-input review-input-sm"
                         placeholder="—"
                         disabled={entry.status === "error"}
                       />
@@ -352,21 +354,6 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
             </button>
           </div>
         </>
-      )}
-
-      {/* Step 4: Uploading */}
-      {step === "uploading" && (
-        <div className="extraction-progress">
-          <LoadingSpinner size="large" />
-          <h4>Uploading SOP {uploadProgress.current} of {uploadProgress.total}</h4>
-          <p>Storing documents and generating embeddings...</p>
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
-            />
-          </div>
-        </div>
       )}
     </div>
   );

@@ -99,18 +99,23 @@ const DuplicateDetection = () => {
       return;
     }
 
-    try {
-      setAnalyzing(true);
-      const result = await duplicateService.runAnalysis(organizationId);
-      toastService.success(
-        `Analysis complete: ${result.flagged_pairs} potential duplicates found in ${result.clusters} clusters`
-      );
-      await fetchData();
-    } catch (err) {
-      toastService.error("Analysis failed: " + err.message);
-    } finally {
-      setAnalyzing(false);
-    }
+    setAnalyzing(true);
+    toastService.info("Duplicate analysis started in background...");
+
+    // Run in background — don't block the UI
+    duplicateService.runAnalysis(organizationId)
+      .then((result) => {
+        toastService.success(
+          `Analysis complete: ${result.flagged_pairs} potential duplicates found in ${result.clusters} clusters`
+        );
+        fetchData();
+      })
+      .catch((err) => {
+        toastService.error("Analysis failed: " + err.message);
+      })
+      .finally(() => {
+        setAnalyzing(false);
+      });
   };
 
   const handleBulkUploadComplete = async () => {
@@ -316,7 +321,7 @@ const DuplicateDetection = () => {
                 <div className="sop-doc-info">
                   <h4>{doc.title}</h4>
                   <p>
-                    {[doc.sop_code, doc.department, doc.site, doc.version && `v${doc.version}`]
+                    {[doc.sop_code, doc.category?.category_name, doc.department, doc.site, doc.version && `v${doc.version}`]
                       .filter(Boolean)
                       .join(" · ") || "No metadata"}
                   </p>
@@ -466,13 +471,7 @@ const DuplicateDetection = () => {
         {sopDocs.length === 0 && !analyzing && (
           <div className="empty-state">
             <h3>Get Started</h3>
-            <p>Upload SOPs to begin duplicate detection. You need at least 2 SOPs to run an analysis.</p>
-            <button
-              className="run-analysis-btn"
-              onClick={() => setShowUploadModal(true)}
-            >
-              Add Your First SOP
-            </button>
+            <p>Use the Bulk Upload button above to add SOPs. You need at least 2 SOPs to run an analysis.</p>
           </div>
         )}
 

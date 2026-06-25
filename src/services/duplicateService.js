@@ -3,7 +3,18 @@ import edgeFunctionService from './edgeFunctionService';
 
 const duplicateService = {
   // Upload and process a new SOP for the analysis pipeline
-  async uploadSOP({ title, sopCode, version, effectiveDate, department, site, fileUrl, rawText, organizationId, userId }) {
+  // Get all SOP categories
+  async getCategories() {
+    const { data, error } = await supabase
+      .from('sop_categories')
+      .select('*')
+      .order('category_name');
+
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async uploadSOP({ title, sopCode, version, effectiveDate, department, site, categoryId, fileUrl, rawText, organizationId, userId }) {
     const { data, error } = await supabase
       .from('sop_documents')
       .insert({
@@ -13,6 +24,7 @@ const duplicateService = {
         effective_date: effectiveDate || null,
         department: department || null,
         site: site || 'Global',
+        category_id: categoryId || null,
         file_url: fileUrl,
         raw_text: rawText,
         organization_id: organizationId,
@@ -35,7 +47,7 @@ const duplicateService = {
   async getSOPDocuments(organizationId) {
     const { data, error } = await supabase
       .from('sop_documents')
-      .select('*')
+      .select('*, category:sop_categories(category_name)')
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
 
