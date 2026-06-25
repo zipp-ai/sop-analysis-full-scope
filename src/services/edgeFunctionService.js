@@ -28,6 +28,7 @@ const edgeFunctionService = {
   processSOP: (sopId) => callEdgeFunction('process-sop', { sop_id: sopId }),
   detectDuplicates: (organizationId) => callEdgeFunction('detect-duplicates', { organization_id: organizationId }),
   extractMetadata: (rawText, fileName) => callEdgeFunction('extract-metadata', { raw_text: rawText, file_name: fileName }),
+  simplifySOP: (sopId, organizationId) => callEdgeFunction('simplify-sop', { sop_id: sopId, organization_id: organizationId }),
 };
 
 export default edgeFunctionService;
