@@ -14,6 +14,68 @@
   margin: 0 0 1.5rem 0;
 }
 
+/* Scope Selector */
+.scope-selector {
+  margin-bottom: 1rem;
+}
+
+.scope-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.scope-options {
+  display: flex;
+  gap: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.625rem;
+}
+
+.scope-btn {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: white;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scope-btn:not(:last-child) {
+  border-right: 1px solid #e2e8f0;
+}
+
+.scope-btn.active {
+  background: #6c63ff;
+  color: white;
+}
+
+.scope-btn:hover:not(.active) {
+  background: #f8fafc;
+}
+
+.site-name-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+
+.site-name-input:focus {
+  outline: none;
+  border-color: #6c63ff;
+}
+
 /* Drop Zone */
 .bulk-drop-zone {
   border: 2px dashed #cbd5e1;

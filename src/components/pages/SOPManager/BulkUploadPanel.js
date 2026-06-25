@@ -11,6 +11,8 @@ const BulkUploadPanel = ({ organizationId, userId, categories, onComplete, onBac
   const [files, setFiles] = useState([]);
   const [sopEntries, setSopEntries] = useState([]);
   const [extractionProgress, setExtractionProgress] = useState({ current: 0, total: 0 });
+  const [sopScope, setSopScope] = useState("global"); // global | site
+  const [defaultSiteName, setDefaultSiteName] = useState("");
   const fileInputRef = useRef(null);
 
   const handleFileDrop = (e) => {
@@ -42,19 +44,21 @@ const BulkUploadPanel = ({ organizationId, userId, categories, onComplete, onBac
       const file = files[i];
       try {
         const rawText = await extractTextFromFile(file);
-        let metadata = { title: file.name.replace(/\.[^/.]+$/, ""), sop_code: null, version: null, department: "General", category: "General", category_id: null, site: "Global", summary: "" };
+        const defaultSite = sopScope === "global" ? "Global" : (defaultSiteName || "Site");
+        let metadata = { title: file.name.replace(/\.[^/.]+$/, ""), sop_code: null, version: null, department: "General", category: "General", category_id: null, site: defaultSite, summary: "" };
         try {
           const result = await edgeFunctionService.extractMetadata(rawText, file.name);
           if (result.metadata) metadata = { ...metadata, ...result.metadata };
         } catch (err) { console.error("Metadata extraction failed for", file.name, err); }
 
+        const siteValue = sopScope === "global" ? "Global" : (metadata.site && metadata.site !== "Global" ? metadata.site : defaultSiteName || "Site");
         entries.push({
           fileName: file.name, rawText,
           title: metadata.title || file.name.replace(/\.[^/.]+$/, ""),
           sopCode: metadata.sop_code || "", version: metadata.version || "",
           department: metadata.department || "General",
           categoryId: metadata.category_id || null, categoryName: metadata.category || "General",
-          site: metadata.site || "Global", summary: metadata.summary || "",
+          site: siteValue, summary: metadata.summary || "",
           status: "ready", error: null,
         });
       } catch (err) {
@@ -128,6 +132,33 @@ const BulkUploadPanel = ({ organizationId, userId, categories, onComplete, onBac
 
       {step === "select" && (
         <>
+          <div className="scope-selector">
+            <label className="scope-label">These SOPs are:</label>
+            <div className="scope-options">
+              <button
+                className={`scope-btn ${sopScope === "global" ? "active" : ""}`}
+                onClick={() => { setSopScope("global"); setDefaultSiteName(""); }}
+              >
+                Global SOPs
+              </button>
+              <button
+                className={`scope-btn ${sopScope === "site" ? "active" : ""}`}
+                onClick={() => setSopScope("site")}
+              >
+                Site-specific SOPs
+              </button>
+            </div>
+            {sopScope === "site" && (
+              <input
+                type="text"
+                className="site-name-input"
+                placeholder="Enter site name (e.g., Plant 1, Hyderabad, Unit 2)"
+                value={defaultSiteName}
+                onChange={(e) => setDefaultSiteName(e.target.value)}
+              />
+            )}
+          </div>
+
           <div className="bulk-drop-zone" onDrop={handleFileDrop} onDragOver={(e) => e.preventDefault()} onClick={() => fileInputRef.current?.click()}>
             <div className="drop-zone-icon">+</div>
             <p>Drop SOP files here or click to browse</p>
