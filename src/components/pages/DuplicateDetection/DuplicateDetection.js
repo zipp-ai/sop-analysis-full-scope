@@ -29,6 +29,7 @@ const DuplicateDetection = () => {
   // Config state
   const [analysisName, setAnalysisName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedSite, setSelectedSite] = useState("");
   const [selectedSopIds, setSelectedSopIds] = useState([]);
   const [selectAllInCategory, setSelectAllInCategory] = useState(true);
 
@@ -98,17 +99,41 @@ const DuplicateDetection = () => {
 
   const handleCloseResults = () => { setSelectedAnalysis(null); setPairs([]); setVerdicts({}); };
 
-  const sopsInCategory = useMemo(() => {
+  // Unique sites from SOPs
+  const uniqueSites = useMemo(() => {
+    const sites = new Set();
+    sopDocs.forEach(d => { if (d.site) sites.add(d.site); });
+    return Array.from(sites).sort();
+  }, [sopDocs]);
+
+  // Sites available for selected category
+  const sitesInCategory = useMemo(() => {
     if (!selectedCategory) return [];
-    return sopDocs.filter(d => d.category_id === selectedCategory && d.status === "ready");
+    const sites = new Set();
+    sopDocs.filter(d => d.category_id === selectedCategory && d.status === "ready")
+      .forEach(d => { if (d.site) sites.add(d.site); });
+    return Array.from(sites).sort();
   }, [sopDocs, selectedCategory]);
 
-  const handleOpenConfig = () => { setAnalysisName(""); setSelectedCategory(""); setSelectedSopIds([]); setSelectAllInCategory(true); setShowAnalysisConfig(true); };
+  const sopsInCategory = useMemo(() => {
+    if (!selectedCategory || !selectedSite) return [];
+    return sopDocs.filter(d => d.category_id === selectedCategory && d.site === selectedSite && d.status === "ready");
+  }, [sopDocs, selectedCategory, selectedSite]);
+
+  const handleOpenConfig = () => { setAnalysisName(""); setSelectedCategory(""); setSelectedSite(""); setSelectedSopIds([]); setSelectAllInCategory(true); setShowAnalysisConfig(true); };
 
   const handleCategoryChange = (catId) => {
     setSelectedCategory(catId);
+    setSelectedSite("");
+    setSelectedSopIds([]);
     setSelectAllInCategory(true);
-    setSelectedSopIds(sopDocs.filter(d => d.category_id === catId && d.status === "ready").map(s => s.id));
+  };
+
+  const handleSiteChange = (site) => {
+    setSelectedSite(site);
+    setSelectAllInCategory(true);
+    const sops = sopDocs.filter(d => d.category_id === selectedCategory && d.site === site && d.status === "ready");
+    setSelectedSopIds(sops.map(s => s.id));
   };
 
   const toggleSop = (id) => { setSelectAllInCategory(false); setSelectedSopIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]); };
@@ -322,7 +347,19 @@ const DuplicateDetection = () => {
               {categories.map(cat => (<option key={cat.id} value={cat.id}>{cat.category_name} ({categoryCounts[cat.id] || 0} SOPs)</option>))}
             </select>
           </div>
-          {selectedCategory && sopsInCategory.length > 0 && (
+          {selectedCategory && sitesInCategory.length > 0 && (
+            <div className="config-field">
+              <label>Site</label>
+              <select value={selectedSite} onChange={(e) => handleSiteChange(e.target.value)} className="config-select">
+                <option value="">Select a site...</option>
+                {sitesInCategory.map(site => {
+                  const count = sopDocs.filter(d => d.category_id === selectedCategory && d.site === site && d.status === "ready").length;
+                  return <option key={site} value={site}>{site} ({count} SOPs)</option>;
+                })}
+              </select>
+            </div>
+          )}
+          {selectedSite && sopsInCategory.length > 0 && (
             <div className="config-field">
               <div className="sop-select-header">
                 <label>Select SOPs ({selectedSopIds.length} of {sopsInCategory.length})</label>
@@ -339,7 +376,7 @@ const DuplicateDetection = () => {
               </div>
             </div>
           )}
-          {selectedCategory && sopsInCategory.length < 2 && <div className="config-warning">Fewer than 2 ready SOPs in this category.</div>}
+          {selectedSite && sopsInCategory.length < 2 && <div className="config-warning">Fewer than 2 ready SOPs for this category and site combination.</div>}
           <div className="config-actions">
             <button className="back-btn" onClick={() => setShowAnalysisConfig(false)}>Cancel</button>
             <button className="run-analysis-btn" onClick={handleRunAnalysis} disabled={selectedSopIds.length < 2}>Run Analysis ({selectedSopIds.length} SOPs)</button>
