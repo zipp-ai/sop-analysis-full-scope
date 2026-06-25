@@ -1,21 +1,32 @@
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
+const AZURE_ENDPOINT = Deno.env.get("AZURE_OPENAI_ENDPOINT")!;
+const AZURE_API_KEY = Deno.env.get("AZURE_OPENAI_API_KEY")!;
+const CHAT_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_DEPLOYMENT")!;
+const EMBEDDING_DEPLOYMENT = Deno.env.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")!;
+const API_VERSION = "2024-02-01";
+
+function embeddingUrl(): string {
+  return `${AZURE_ENDPOINT}/openai/deployments/${EMBEDDING_DEPLOYMENT}/embeddings?api-version=${API_VERSION}`;
+}
+
+function chatUrl(): string {
+  return `${AZURE_ENDPOINT}/openai/deployments/${CHAT_DEPLOYMENT}/chat/completions?api-version=${API_VERSION}`;
+}
 
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await fetch("https://api.openai.com/v1/embeddings", {
+  const response = await fetch(embeddingUrl(), {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "api-key": AZURE_API_KEY,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "text-embedding-3-small",
       input: text.slice(0, 8000),
     }),
   });
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`OpenAI embedding error: ${err}`);
+    throw new Error(`Azure embedding error: ${err}`);
   }
 
   const data = await response.json();
@@ -26,21 +37,20 @@ export async function generateEmbeddings(
   texts: string[]
 ): Promise<number[][]> {
   const trimmed = texts.map((t) => t.slice(0, 8000));
-  const response = await fetch("https://api.openai.com/v1/embeddings", {
+  const response = await fetch(embeddingUrl(), {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "api-key": AZURE_API_KEY,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "text-embedding-3-small",
       input: trimmed,
     }),
   });
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`OpenAI embedding error: ${err}`);
+    throw new Error(`Azure embedding error: ${err}`);
   }
 
   const data = await response.json();
@@ -51,17 +61,15 @@ export async function generateEmbeddings(
 
 export async function chatCompletion(
   systemPrompt: string,
-  userPrompt: string,
-  model = "gpt-4o-mini"
+  userPrompt: string
 ): Promise<string> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetch(chatUrl(), {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "api-key": AZURE_API_KEY,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -72,7 +80,7 @@ export async function chatCompletion(
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`OpenAI chat error: ${err}`);
+    throw new Error(`Azure chat error: ${err}`);
   }
 
   const data = await response.json();
@@ -81,17 +89,15 @@ export async function chatCompletion(
 
 export async function chatCompletionJSON(
   systemPrompt: string,
-  userPrompt: string,
-  model = "gpt-4o-mini"
+  userPrompt: string
 ): Promise<any> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetch(chatUrl(), {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "api-key": AZURE_API_KEY,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -103,7 +109,7 @@ export async function chatCompletionJSON(
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`OpenAI chat error: ${err}`);
+    throw new Error(`Azure chat error: ${err}`);
   }
 
   const data = await response.json();

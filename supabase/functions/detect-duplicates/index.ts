@@ -256,8 +256,7 @@ serve(async (req: Request) => {
 
           const result = await chatCompletionJSON(
             `You are a GMP/pharmaceutical SOP analyst. Compare two SOPs and classify their relationship. Respond in JSON with: classification (full_duplicate | partial_overlap | version_variant | distinct), recommended_action (retire | merge | split | version_consolidate | review | none), reasoning (2-3 sentences explaining your assessment).`,
-            `SOP A: "${pair.sop_a.title}" (Code: ${pair.sop_a.sop_code || "N/A"}, Version: ${pair.sop_a.version || "N/A"}, Dept: ${pair.sop_a.department || "N/A"})\n\nContent:\n${textA}\n\n---\n\nSOP B: "${pair.sop_b.title}" (Code: ${pair.sop_b.sop_code || "N/A"}, Version: ${pair.sop_b.version || "N/A"}, Dept: ${pair.sop_b.department || "N/A"})\n\nContent:\n${textB}`,
-            "gpt-4o-mini"
+            `SOP A: "${pair.sop_a.title}" (Code: ${pair.sop_a.sop_code || "N/A"}, Version: ${pair.sop_a.version || "N/A"}, Dept: ${pair.sop_a.department || "N/A"})\n\nContent:\n${textA}\n\n---\n\nSOP B: "${pair.sop_b.title}" (Code: ${pair.sop_b.sop_code || "N/A"}, Version: ${pair.sop_b.version || "N/A"}, Dept: ${pair.sop_b.department || "N/A"})\n\nContent:\n${textB}`
           );
 
           llmClassification = result.classification;
