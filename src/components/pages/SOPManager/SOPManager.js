@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navigation from "../../common/Navigation/Navigation";
 import Modal from "../../common/Modal/Modal";
 import LoadingSpinner from "../../common/LoadingSpinner/LoadingSpinner";
@@ -7,7 +7,6 @@ import BulkUpload from "./BulkUploadPanel";
 import duplicateService from "../../../services/duplicateService";
 import toastService from "../../../services/toastService";
 import supabase from "../../../supabase";
-import { formatDate } from "../../../utils/dateUtils";
 import "./SOPManager.css";
 
 const SOPManager = () => {
@@ -17,15 +16,13 @@ const SOPManager = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [sopToDelete, setSopToDelete] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingSop, setEditingSop] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [saving, setSaving] = useState(false);
+  const [viewingSop, setViewingSop] = useState(null);
+  const [viewForm, setViewForm] = useState({});
+  const [viewSaving, setViewSaving] = useState(false);
   const [organizationId, setOrganizationId] = useState(null);
   const [userId, setUserId] = useState(null);
   const [filterCategory, setFilterCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [backgroundJobs, setBackgroundJobs] = useState([]);
   const pollRef = useRef(null);
 
   useEffect(() => {
@@ -49,9 +46,7 @@ const SOPManager = () => {
 
   const startPolling = () => {
     if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(() => {
-      fetchData(true);
-    }, 5000);
+    pollRef.current = setInterval(() => fetchData(true), 5000);
   };
 
   const fetchData = async (silent = false) => {
@@ -63,11 +58,10 @@ const SOPManager = () => {
       ]);
       setSopDocs(docs || []);
       setCategories(cats || []);
-
-      // Check if any are still processing
-      const processing = (docs || []).filter(d => d.status === "processing" || d.status === "pending");
-      if (processing.length === 0 && pollRef.current) {
-        // Stop polling if nothing is processing
+      // Update viewing SOP if it changed
+      if (viewingSop) {
+        const updated = (docs || []).find(d => d.id === viewingSop.id);
+        if (updated) setViewingSop(updated);
       }
     } catch (err) {
       if (!silent) toastService.error("Failed to load SOPs: " + err.message);
@@ -76,15 +70,9 @@ const SOPManager = () => {
     }
   };
 
-  const handleBulkUploadStart = (jobs) => {
-    setBackgroundJobs(jobs);
-    setShowUploadModal(false);
-    toastService.info(`Uploading ${jobs.length} SOPs in background...`);
-  };
-
-  const handleEditSOP = (doc) => {
-    setEditingSop(doc);
-    setEditForm({
+  const handleViewSOP = (doc) => {
+    setViewingSop(doc);
+    setViewForm({
       title: doc.title || "",
       sop_code: doc.sop_code || "",
       version: doc.version || "",
@@ -92,22 +80,24 @@ const SOPManager = () => {
       site: doc.site || "Global",
       category_id: doc.category_id || "",
     });
-    setShowEditModal(true);
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingSop) return;
+  const handleCloseView = () => {
+    setViewingSop(null);
+    setViewForm({});
+  };
+
+  const handleViewSave = async () => {
+    if (!viewingSop) return;
     try {
-      setSaving(true);
-      await duplicateService.updateSOPDocument(editingSop.id, editForm);
+      setViewSaving(true);
+      await duplicateService.updateSOPDocument(viewingSop.id, viewForm);
       toastService.success("SOP updated");
-      setShowEditModal(false);
-      setEditingSop(null);
       await fetchData();
     } catch (err) {
       toastService.error("Update failed: " + err.message);
     } finally {
-      setSaving(false);
+      setViewSaving(false);
     }
   };
 
@@ -116,6 +106,7 @@ const SOPManager = () => {
     try {
       await duplicateService.deleteSOPDocument(sopToDelete.id);
       toastService.success("SOP deleted");
+      if (viewingSop?.id === sopToDelete.id) handleCloseView();
       setSopToDelete(null);
       setShowDeleteConfirm(false);
       await fetchData();
@@ -126,9 +117,7 @@ const SOPManager = () => {
 
   const filteredDocs = React.useMemo(() => {
     let docs = sopDocs;
-    if (filterCategory !== "all") {
-      docs = docs.filter(d => d.category_id === filterCategory);
-    }
+    if (filterCategory !== "all") docs = docs.filter(d => d.category_id === filterCategory);
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       docs = docs.filter(d => (d.title || "").toLowerCase().includes(term));
@@ -138,16 +127,13 @@ const SOPManager = () => {
 
   const processingCount = sopDocs.filter(d => d.status === "processing" || d.status === "pending").length;
   const readyCount = sopDocs.filter(d => d.status === "ready").length;
+  const isViewOpen = !!viewingSop;
 
   if (loading) {
     return (
-      <div className="sop-manager">
-        <Navigation />
+      <div className="sop-manager"><Navigation />
         <div className="sop-manager-content">
-          <div className="loading-container">
-            <LoadingSpinner size="large" />
-            <span className="loading-text">Loading SOPs...</span>
-          </div>
+          <div className="loading-container"><LoadingSpinner size="large" /><span className="loading-text">Loading SOPs...</span></div>
         </div>
       </div>
     );
@@ -156,211 +142,168 @@ const SOPManager = () => {
   return (
     <div className="sop-manager">
       <Navigation />
-      <div className="sop-manager-content">
-        <div className="page-header">
-          <h2>SOP Library</h2>
-          <span className="subtitle">{sopDocs.length} SOPs</span>
+      <div className={`sop-manager-content ${isViewOpen ? "split-view" : ""}`}>
+        {/* LEFT: SOP List */}
+        <div className={`sop-list-panel ${isViewOpen ? "compact" : ""}`}>
+          <div className="page-header">
+            <h2>SOP Library</h2>
+            <span className="subtitle">{sopDocs.length} SOPs</span>
+          </div>
+
+          {processingCount > 0 && (
+            <div className="processing-banner">
+              <LoadingSpinner size="small" />
+              <span>{processingCount} SOP(s) processing...</span>
+            </div>
+          )}
+
+          {!isViewOpen && (
+            <div className="sop-stats">
+              <div className="sop-stat"><span className="sop-stat-value">{sopDocs.length}</span><span className="sop-stat-label">Total</span></div>
+              <div className="sop-stat"><span className="sop-stat-value" style={{ color: "#22c55e" }}>{readyCount}</span><span className="sop-stat-label">Ready</span></div>
+              <div className="sop-stat"><span className="sop-stat-value" style={{ color: "#f59e0b" }}>{processingCount}</span><span className="sop-stat-label">Processing</span></div>
+              <div className="sop-stat"><span className="sop-stat-value">{new Set(sopDocs.map(d => d.category_id).filter(Boolean)).size}</span><span className="sop-stat-label">Categories</span></div>
+            </div>
+          )}
+
+          <div className="sop-controls">
+            <div className="sop-controls-left">
+              <input type="text" className="sop-search" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              {!isViewOpen && (
+                <select className="sop-filter" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+                  <option value="all">All Categories</option>
+                  {categories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.category_name}</option>))}
+                </select>
+              )}
+            </div>
+            <button className="upload-btn" onClick={() => setShowUploadModal(true)}>Bulk Upload</button>
+          </div>
+
+          <div className="sop-table-container">
+            <table className="sop-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  {!isViewOpen && <th>SOP Code</th>}
+                  {!isViewOpen && <th>Category</th>}
+                  {!isViewOpen && <th>Department</th>}
+                  {!isViewOpen && <th>Site</th>}
+                  {!isViewOpen && <th>Version</th>}
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDocs.length === 0 ? (
+                  <tr><td colSpan={isViewOpen ? 3 : 8} className="empty-row">{sopDocs.length === 0 ? "No SOPs uploaded yet." : "No SOPs match filters."}</td></tr>
+                ) : (
+                  filteredDocs.map((doc) => (
+                    <tr key={doc.id} className={viewingSop?.id === doc.id ? "row-active" : ""}>
+                      <td className="cell-title">{doc.title}</td>
+                      {!isViewOpen && <td>{doc.sop_code || "—"}</td>}
+                      {!isViewOpen && <td>{doc.category?.category_name ? <span className="category-badge">{doc.category.category_name}</span> : "—"}</td>}
+                      {!isViewOpen && <td>{doc.department || "—"}</td>}
+                      {!isViewOpen && <td>{doc.site || "Global"}</td>}
+                      {!isViewOpen && <td>{doc.version || "—"}</td>}
+                      <td><span className={`status-pill status-${doc.status}`}>{doc.status}</span></td>
+                      <td className="action-cell">
+                        <button className="view-btn-sm" onClick={() => handleViewSOP(doc)} title="View document">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                        <button className="edit-btn-sm" onClick={() => { handleViewSOP(doc); }} title="Edit metadata">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                          </svg>
+                        </button>
+                        <button className="delete-btn-sm" onClick={() => { setSopToDelete(doc); setShowDeleteConfirm(true); }} title="Delete SOP">×</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Background processing banner */}
-        {processingCount > 0 && (
-          <div className="processing-banner">
-            <LoadingSpinner size="small" />
-            <span>{processingCount} SOP(s) processing in background — extracting sections & generating embeddings...</span>
+        {/* RIGHT: Document View Panel */}
+        {isViewOpen && (
+          <div className="sop-view-panel">
+            <div className="view-panel-header">
+              <h3>{viewingSop.title}</h3>
+              <button className="exit-view-btn" onClick={handleCloseView}>Exit View</button>
+            </div>
+
+            {/* Editable metadata */}
+            <div className="view-metadata">
+              <div className="view-meta-row">
+                <div className="view-meta-field">
+                  <label>Title</label>
+                  <input type="text" value={viewForm.title || ""} onChange={(e) => setViewForm({ ...viewForm, title: e.target.value })} />
+                </div>
+              </div>
+              <div className="view-meta-row">
+                <div className="view-meta-field">
+                  <label>SOP Code</label>
+                  <input type="text" value={viewForm.sop_code || ""} onChange={(e) => setViewForm({ ...viewForm, sop_code: e.target.value })} placeholder="—" />
+                </div>
+                <div className="view-meta-field">
+                  <label>Version</label>
+                  <input type="text" value={viewForm.version || ""} onChange={(e) => setViewForm({ ...viewForm, version: e.target.value })} placeholder="—" />
+                </div>
+              </div>
+              <div className="view-meta-row">
+                <div className="view-meta-field">
+                  <label>Category</label>
+                  <select value={viewForm.category_id || ""} onChange={(e) => setViewForm({ ...viewForm, category_id: e.target.value || null })}>
+                    <option value="">Select</option>
+                    {categories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.category_name}</option>))}
+                  </select>
+                </div>
+                <div className="view-meta-field">
+                  <label>Department</label>
+                  <input type="text" value={viewForm.department || ""} onChange={(e) => setViewForm({ ...viewForm, department: e.target.value })} />
+                </div>
+              </div>
+              <div className="view-meta-row">
+                <div className="view-meta-field">
+                  <label>Site</label>
+                  <input type="text" value={viewForm.site || ""} onChange={(e) => setViewForm({ ...viewForm, site: e.target.value })} placeholder="Global" />
+                </div>
+                <div className="view-meta-field view-meta-actions">
+                  <button className="save-btn" onClick={handleViewSave} disabled={viewSaving}>
+                    {viewSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Document content */}
+            <div className="view-document">
+              <h4>Document Content</h4>
+              <div className="document-text">
+                {viewingSop.raw_text ? (
+                  viewingSop.raw_text.split("\n").map((line, i) => (
+                    <p key={i} className={line.trim() === "" ? "empty-line" : ""}>{line || " "}</p>
+                  ))
+                ) : (
+                  <p className="no-content">No text content available. SOP may still be processing.</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
-
-        {/* Stats */}
-        <div className="sop-stats">
-          <div className="sop-stat">
-            <span className="sop-stat-value">{sopDocs.length}</span>
-            <span className="sop-stat-label">Total</span>
-          </div>
-          <div className="sop-stat">
-            <span className="sop-stat-value" style={{ color: "#22c55e" }}>{readyCount}</span>
-            <span className="sop-stat-label">Ready</span>
-          </div>
-          <div className="sop-stat">
-            <span className="sop-stat-value" style={{ color: "#f59e0b" }}>{processingCount}</span>
-            <span className="sop-stat-label">Processing</span>
-          </div>
-          <div className="sop-stat">
-            <span className="sop-stat-value">{new Set(sopDocs.map(d => d.category_id).filter(Boolean)).size}</span>
-            <span className="sop-stat-label">Categories</span>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="sop-controls">
-          <div className="sop-controls-left">
-            <input
-              type="text"
-              className="sop-search"
-              placeholder="Search SOPs..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <select
-              className="sop-filter"
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-            >
-              <option value="all">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.category_name}</option>
-              ))}
-            </select>
-          </div>
-          <button className="upload-btn" onClick={() => setShowUploadModal(true)}>
-            Bulk Upload
-          </button>
-        </div>
-
-        {/* SOP Table */}
-        <div className="sop-table-container">
-          <table className="sop-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>SOP Code</th>
-                <th>Category</th>
-                <th>Department</th>
-                <th>Site</th>
-                <th>Version</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDocs.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="empty-row">
-                    {sopDocs.length === 0
-                      ? "No SOPs uploaded yet. Use Bulk Upload to add SOPs."
-                      : "No SOPs match the current filters."}
-                  </td>
-                </tr>
-              ) : (
-                filteredDocs.map((doc) => (
-                  <tr key={doc.id}>
-                    <td className="cell-title">{doc.title}</td>
-                    <td>{doc.sop_code || "—"}</td>
-                    <td>
-                      {doc.category?.category_name ? (
-                        <span className="category-badge">{doc.category.category_name}</span>
-                      ) : "—"}
-                    </td>
-                    <td>{doc.department || "—"}</td>
-                    <td>{doc.site || "Global"}</td>
-                    <td>{doc.version || "—"}</td>
-                    <td>
-                      <span className={`status-pill status-${doc.status}`}>
-                        {doc.status === "processing" && <LoadingSpinner size="tiny" />}
-                        {doc.status}
-                      </span>
-                    </td>
-                    <td className="action-cell">
-                      <button
-                        className="edit-btn-sm"
-                        onClick={() => handleEditSOP(doc)}
-                        title="Edit metadata"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-                        </svg>
-                      </button>
-                      <button
-                        className="delete-btn-sm"
-                        onClick={() => { setSopToDelete(doc); setShowDeleteConfirm(true); }}
-                        title="Delete SOP"
-                      >
-                        ×
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
 
-      {/* Bulk Upload Modal */}
-      <Modal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        closeOnOutsideClick={true}
-      >
-        <BulkUpload
-          organizationId={organizationId}
-          userId={userId}
-          categories={categories}
-          onComplete={() => { setShowUploadModal(false); fetchData(); }}
-          onBackgroundStart={handleBulkUploadStart}
-        />
+      <Modal isOpen={showUploadModal} onClose={() => setShowUploadModal(false)} closeOnOutsideClick={true}>
+        <BulkUpload organizationId={organizationId} userId={userId} categories={categories}
+          onComplete={() => { setShowUploadModal(false); fetchData(); }} onBackgroundStart={() => {}} />
       </Modal>
 
-      {/* Edit Metadata Modal */}
-      <Modal
-        isOpen={showEditModal}
-        onClose={() => { setShowEditModal(false); setEditingSop(null); }}
-        closeOnOutsideClick={!saving}
-      >
-        <div className="edit-sop-modal">
-          <h3>Edit SOP Metadata</h3>
-          <div className="edit-form">
-            <div className="edit-field">
-              <label>Title</label>
-              <input type="text" value={editForm.title || ""} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
-            </div>
-            <div className="edit-row">
-              <div className="edit-field">
-                <label>SOP Code</label>
-                <input type="text" value={editForm.sop_code || ""} onChange={(e) => setEditForm({ ...editForm, sop_code: e.target.value })} placeholder="e.g., SOP-QA-001" />
-              </div>
-              <div className="edit-field">
-                <label>Version</label>
-                <input type="text" value={editForm.version || ""} onChange={(e) => setEditForm({ ...editForm, version: e.target.value })} placeholder="e.g., 1.0" />
-              </div>
-            </div>
-            <div className="edit-field">
-              <label>Category</label>
-              <select value={editForm.category_id || ""} onChange={(e) => setEditForm({ ...editForm, category_id: e.target.value || null })}>
-                <option value="">Select Category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.category_name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="edit-row">
-              <div className="edit-field">
-                <label>Department</label>
-                <input type="text" value={editForm.department || ""} onChange={(e) => setEditForm({ ...editForm, department: e.target.value })} />
-              </div>
-              <div className="edit-field">
-                <label>Site</label>
-                <input type="text" value={editForm.site || ""} onChange={(e) => setEditForm({ ...editForm, site: e.target.value })} placeholder="Global" />
-              </div>
-            </div>
-            <div className="edit-actions">
-              <button className="cancel-btn" onClick={() => { setShowEditModal(false); setEditingSop(null); }}>Cancel</button>
-              <button className="save-btn" onClick={handleSaveEdit} disabled={saving || !editForm.title}>
-                {saving ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      <ConfirmationModal
-        isOpen={showDeleteConfirm}
-        onClose={() => { setShowDeleteConfirm(false); setSopToDelete(null); }}
-        onConfirm={handleDeleteSOP}
-        title="Delete SOP"
-        message={`Are you sure you want to delete "${sopToDelete?.title}"?`}
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
+      <ConfirmationModal isOpen={showDeleteConfirm} onClose={() => { setShowDeleteConfirm(false); setSopToDelete(null); }}
+        onConfirm={handleDeleteSOP} title="Delete SOP" message={`Are you sure you want to delete "${sopToDelete?.title}"?`}
+        confirmText="Delete" cancelText="Cancel" />
     </div>
   );
 };
