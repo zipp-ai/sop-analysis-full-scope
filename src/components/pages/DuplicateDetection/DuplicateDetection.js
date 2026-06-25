@@ -20,18 +20,20 @@ const DuplicateDetection = () => {
   const [analyses, setAnalyses] = useState([]);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [pairs, setPairs] = useState([]);
-  const [clusters, setClusters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
-  const [expandedClusters, setExpandedClusters] = useState({});
   const [showAnalysisConfig, setShowAnalysisConfig] = useState(false);
   const [organizationId, setOrganizationId] = useState(null);
+  const [activeTab, setActiveTab] = useState("analysis"); // analysis | results
 
-  // Analysis config
+  // Config state
   const [analysisName, setAnalysisName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSopIds, setSelectedSopIds] = useState([]);
   const [selectAllInCategory, setSelectAllInCategory] = useState(true);
+
+  // Results: SOP verdicts keyed by sop_id
+  const [verdicts, setVerdicts] = useState({});
 
   useEffect(() => {
     const init = async () => {
@@ -59,12 +61,42 @@ const DuplicateDetection = () => {
   const loadAnalysisResults = async (analysis) => {
     try {
       setSelectedAnalysis(analysis);
-      const [p, c] = await Promise.all([duplicateService.getPairs(analysis.id), duplicateService.getClusters(analysis.id)]);
-      setPairs(p || []); setClusters(c || []);
+      setActiveTab("analysis");
+      const p = await duplicateService.getPairs(analysis.id);
+      setPairs(p || []);
+      // Build initial verdicts from pair data
+      buildVerdicts(p || [], sopDocs);
     } catch (err) { toastService.error("Failed to load results: " + err.message); }
   };
 
-  const handleCloseResults = () => { setSelectedAnalysis(null); setPairs([]); setClusters([]); };
+  const buildVerdicts = (pairsData, docs) => {
+    // Collect all SOPs involved in this analysis
+    const sopIds = new Set();
+    pairsData.forEach(p => { sopIds.add(p.sop_a_id); sopIds.add(p.sop_b_id); });
+
+    const v = {};
+    sopIds.forEach(id => {
+      // Check if this SOP is flagged as duplicate in any pair
+      const isDuplicate = pairsData.some(p =>
+        (p.sop_a_id === id || p.sop_b_id === id) &&
+        (p.llm_classification === "full_duplicate" || p.llm_classification === "partial_overlap" || p.llm_classification === "version_variant")
+      );
+      // Check user decisions
+      const userMarked = pairsData.find(p =>
+        (p.sop_a_id === id || p.sop_b_id === id) && p.user_decision
+      );
+      if (userMarked?.user_decision === "retire") {
+        v[id] = "duplicate";
+      } else if (userMarked?.user_decision === "distinct") {
+        v[id] = "continue";
+      } else {
+        v[id] = isDuplicate ? "duplicate" : "continue";
+      }
+    });
+    setVerdicts(v);
+  };
+
+  const handleCloseResults = () => { setSelectedAnalysis(null); setPairs([]); setVerdicts({}); };
 
   const sopsInCategory = useMemo(() => {
     if (!selectedCategory) return [];
@@ -87,41 +119,41 @@ const DuplicateDetection = () => {
     setShowAnalysisConfig(false); setAnalyzing(true);
     toastService.info("Duplicate analysis started...");
     duplicateService.runAnalysis(organizationId)
-      .then((r) => { toastService.success(`Analysis complete: ${r.flagged_pairs} duplicates in ${r.clusters} clusters`); fetchData(); })
+      .then(() => { toastService.success("Analysis complete"); fetchData(); })
       .catch((e) => toastService.error("Analysis failed: " + e.message))
       .finally(() => setAnalyzing(false));
   };
 
-  const handleDecision = async (pairId, decision) => {
-    try { await duplicateService.updatePairDecision(pairId, decision); setPairs(prev => prev.map(p => p.id === pairId ? { ...p, user_decision: decision } : p)); toastService.success("Saved"); } catch { toastService.error("Failed"); }
-  };
-
   const handleDeleteAnalysis = async (id) => {
-    try { await duplicateService.deleteAnalysis(id); toastService.success("Deleted"); if (selectedAnalysis?.id === id) handleCloseResults(); await fetchData(); } catch (e) { toastService.error("Delete failed: " + e.message); }
+    try { await duplicateService.deleteAnalysis(id); toastService.success("Deleted"); if (selectedAnalysis?.id === id) handleCloseResults(); await fetchData(); } catch (e) { toastService.error(e.message); }
   };
 
   const handleDeleteAll = async () => {
     try { await duplicateService.deleteAllAnalyses(organizationId); toastService.success("All deleted"); handleCloseResults(); await fetchData(); } catch (e) { toastService.error(e.message); }
   };
 
-  const toggleCluster = (id) => setExpandedClusters(prev => ({ ...prev, [id]: !prev[id] }));
-  const getScoreClass = (s) => s >= 0.85 ? "high" : s >= 0.6 ? "medium" : "low";
+  const toggleVerdict = (sopId) => {
+    setVerdicts(prev => ({
+      ...prev,
+      [sopId]: prev[sopId] === "duplicate" ? "continue" : "duplicate",
+    }));
+  };
 
   const categoryCounts = useMemo(() => {
     const c = {}; sopDocs.forEach(d => { if (d.category_id) c[d.category_id] = (c[d.category_id] || 0) + 1; }); return c;
   }, [sopDocs]);
 
-  const pairsByCluster = useMemo(() => {
-    const map = {};
-    clusters.forEach(cl => { const ids = new Set(cl.sop_ids); map[cl.id] = pairs.filter(p => ids.has(p.sop_a_id) && ids.has(p.sop_b_id)); });
-    const used = new Set(Object.values(map).flat().map(p => p.id));
-    const unc = pairs.filter(p => !used.has(p.id) && p.llm_classification !== "distinct");
-    if (unc.length > 0) map["unclustered"] = unc;
-    return map;
-  }, [pairs, clusters]);
+  // SOPs involved in selected analysis
+  const analysisSops = useMemo(() => {
+    const ids = new Set();
+    pairs.forEach(p => { ids.add(p.sop_a_id); ids.add(p.sop_b_id); });
+    return sopDocs.filter(d => ids.has(d.id));
+  }, [pairs, sopDocs]);
 
   const readySops = sopDocs.filter(s => s.status === "ready").length;
   const isViewOpen = !!selectedAnalysis;
+  const duplicateCount = Object.values(verdicts).filter(v => v === "duplicate").length;
+  const continueCount = Object.values(verdicts).filter(v => v === "continue").length;
 
   if (loading) {
     return (<div className="duplicate-detection"><Navigation /><div className="duplicate-content"><div className="loading-container"><LoadingSpinner size="large" /><span className="loading-text">Loading...</span></div></div></div>);
@@ -153,33 +185,20 @@ const DuplicateDetection = () => {
             {analyses.length > 1 && <button className="clear-all-btn" onClick={handleDeleteAll}>Clear All</button>}
           </div>
 
-          {analyzing && (
-            <div className="analysis-progress-sm">
-              <LoadingSpinner size="small" /><span>Running analysis...</span>
-            </div>
-          )}
+          {analyzing && <div className="analysis-progress-sm"><LoadingSpinner size="small" /><span>Running analysis...</span></div>}
 
-          {/* Analysis list */}
           <div className="analysis-items">
             {analyses.length === 0 && !analyzing ? (
-              <div className="empty-state-sm">
-                {sopDocs.length === 0 ? "Upload SOPs first from the SOPs tab." : "No analyses yet. Click New Analysis to start."}
-              </div>
+              <div className="empty-state-sm">{sopDocs.length === 0 ? "Upload SOPs first from the SOPs tab." : "No analyses yet. Click New Analysis."}</div>
             ) : (
               analyses.map((a) => (
-                <div
-                  key={a.id}
-                  className={`analysis-card ${selectedAnalysis?.id === a.id ? "active" : ""}`}
-                  onClick={() => loadAnalysisResults(a)}
-                >
+                <div key={a.id} className={`analysis-card ${selectedAnalysis?.id === a.id ? "active" : ""}`} onClick={() => loadAnalysisResults(a)}>
                   <div className="analysis-card-top">
                     <span className={`status-badge ${a.status}`}>{STATUS_LABELS[a.status] || a.status}</span>
                     <button className="card-delete-btn" onClick={(e) => { e.stopPropagation(); handleDeleteAnalysis(a.id); }}>×</button>
                   </div>
                   <div className="analysis-card-title">{a.name || "Untitled Analysis"}</div>
-                  {a.category?.category_name && (
-                    <span className="analysis-card-category">{a.category.category_name}</span>
-                  )}
+                  {a.category?.category_name && <span className="analysis-card-category">{a.category.category_name}</span>}
                   <div className="analysis-card-meta">
                     <span>{a.total_sops || 0} SOPs</span>
                     <span>{a.flagged_pairs || 0} flagged</span>
@@ -211,37 +230,89 @@ const DuplicateDetection = () => {
 
             {selectedAnalysis.status === "completed" ? (
               <>
-                <SimilarityHeatmap pairs={pairs} sopDocs={sopDocs} />
+                {/* Tabs: Analysis | Results */}
+                <div className="results-tabs">
+                  <button className={`results-tab ${activeTab === "analysis" ? "active" : ""}`} onClick={() => setActiveTab("analysis")}>
+                    Analysis
+                  </button>
+                  <button className={`results-tab ${activeTab === "results" ? "active" : ""}`} onClick={() => setActiveTab("results")}>
+                    Results
+                    {duplicateCount > 0 && <span className="tab-badge">{duplicateCount}</span>}
+                  </button>
+                </div>
 
-                {clusters.length === 0 ? (
-                  <div className="empty-state-sm" style={{ marginTop: "1.5rem" }}>
-                    No duplicates flagged. Review the heatmap for similarity scores.
+                {activeTab === "analysis" ? (
+                  /* ANALYSIS TAB: Heatmap with drill-down */
+                  <div className="tab-content">
+                    <SimilarityHeatmap pairs={pairs} sopDocs={sopDocs} />
+                    {pairs.length === 0 && (
+                      <div className="empty-state-sm" style={{ marginTop: "1.5rem" }}>No comparison data available.</div>
+                    )}
                   </div>
                 ) : (
-                  <div className="cluster-list" style={{ marginTop: "1.5rem" }}>
-                    {clusters.map((cluster) => {
-                      const cp = pairsByCluster[cluster.id] || [];
-                      const exp = expandedClusters[cluster.id];
-                      const maxScore = cp.length > 0 ? Math.max(...cp.map(p => p.overall_score || 0)) : 0;
-                      return (
-                        <div key={cluster.id} className="cluster-card">
-                          <div className="cluster-header" onClick={() => toggleCluster(cluster.id)}>
-                            <div className="cluster-header-left">
-                              <div className={`cluster-icon ${getScoreClass(maxScore)}`}>{cluster.sop_ids.length}</div>
-                              <div>
-                                <div className="cluster-title">{cluster.cluster_name || `Cluster`}</div>
-                                <div className="cluster-meta">{cp.length} comparison{cp.length !== 1 ? "s" : ""} · Max: {Math.round(maxScore * 100)}%</div>
-                              </div>
-                            </div>
-                            <div className="cluster-header-right">
-                              {cluster.recommended_action && <span className={`action-badge ${cluster.recommended_action}`}>{cluster.recommended_action.replace("_", " ")}</span>}
-                              <span className={`expand-icon ${exp ? "expanded" : ""}`}>▾</span>
-                            </div>
-                          </div>
-                          {exp && <div className="cluster-body">{cp.map(pair => <PairCard key={pair.id} pair={pair} onDecision={handleDecision} getScoreClass={getScoreClass} />)}</div>}
-                        </div>
-                      );
-                    })}
+                  /* RESULTS TAB: SOP verdict table */
+                  <div className="tab-content">
+                    <div className="results-summary">
+                      <div className="summary-stat">
+                        <span className="summary-count" style={{ color: "#16a34a" }}>{continueCount}</span>
+                        <span className="summary-label">Continue</span>
+                      </div>
+                      <div className="summary-stat">
+                        <span className="summary-count" style={{ color: "#dc2626" }}>{duplicateCount}</span>
+                        <span className="summary-label">Mark as Duplicate</span>
+                      </div>
+                      <div className="summary-stat">
+                        <span className="summary-count">{analysisSops.length}</span>
+                        <span className="summary-label">Total SOPs</span>
+                      </div>
+                    </div>
+
+                    <div className="verdict-table-container">
+                      <table className="verdict-table">
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>SOP Code</th>
+                            <th>Category</th>
+                            <th>Department</th>
+                            <th>Site</th>
+                            <th>Version</th>
+                            <th>Verdict</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analysisSops.map((sop) => {
+                            const verdict = verdicts[sop.id] || "continue";
+                            // Find max similarity for this SOP
+                            const maxSim = pairs
+                              .filter(p => p.sop_a_id === sop.id || p.sop_b_id === sop.id)
+                              .reduce((max, p) => Math.max(max, p.semantic_score || 0, p.metadata_score || 0), 0);
+
+                            return (
+                              <tr key={sop.id} className={verdict === "duplicate" ? "row-duplicate" : ""}>
+                                <td className="cell-title">{sop.title}</td>
+                                <td>{sop.sop_code || "—"}</td>
+                                <td>{sop.category?.category_name ? <span className="category-badge-sm">{sop.category.category_name}</span> : "—"}</td>
+                                <td>{sop.department || "—"}</td>
+                                <td>{sop.site || "Global"}</td>
+                                <td>{sop.version || "—"}</td>
+                                <td>
+                                  <button
+                                    className={`verdict-btn ${verdict}`}
+                                    onClick={() => toggleVerdict(sop.id)}
+                                  >
+                                    {verdict === "continue" ? "Continue" : "Duplicate"}
+                                  </button>
+                                  {maxSim > 0.5 && (
+                                    <span className="sim-hint">{Math.round(maxSim * 100)}% max sim</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </>
@@ -293,53 +364,6 @@ const DuplicateDetection = () => {
           </div>
         </div>
       </Modal>
-    </div>
-  );
-};
-
-const PairCard = ({ pair, onDecision, getScoreClass }) => {
-  const [showSections, setShowSections] = useState(false);
-  const sopA = pair.sop_a || {}; const sopB = pair.sop_b || {};
-  const sections = pair.overlapping_sections || [];
-
-  return (
-    <div className="pair-card">
-      <div className="pair-sops">
-        <div className="pair-sop"><h5>{sopA.title || "SOP A"}</h5><p>{[sopA.sop_code, sopA.department, sopA.site].filter(Boolean).join(" · ")}</p></div>
-        <span className="pair-vs">vs</span>
-        <div className="pair-sop"><h5>{sopB.title || "SOP B"}</h5><p>{[sopB.sop_code, sopB.department, sopB.site].filter(Boolean).join(" · ")}</p></div>
-      </div>
-      <div className="pair-scores">
-        <div className="score-item"><span className="score-label">Title:</span><span className={`score-value ${getScoreClass(pair.metadata_score)}`}>{Math.round(pair.metadata_score * 100)}%</span></div>
-        <div className="score-item"><span className="score-label">Semantic:</span><span className={`score-value ${getScoreClass(pair.semantic_score)}`}>{Math.round(pair.semantic_score * 100)}%</span></div>
-        <div className="score-item"><span className="score-label">Scope:</span><span className={`score-value ${getScoreClass(pair.scope_overlap_score)}`}>{Math.round(pair.scope_overlap_score * 100)}%</span></div>
-        {pair.llm_classification && <div className="score-item"><span className="score-label">AI:</span><span className={`action-badge ${pair.recommended_action}`}>{pair.llm_classification.replace("_", " ")}</span></div>}
-      </div>
-      {pair.llm_reasoning && <div className="pair-reasoning">{pair.llm_reasoning}</div>}
-      {sections.length > 0 && (
-        <div className="section-comparison">
-          <button className="section-toggle" onClick={() => setShowSections(!showSections)}>{showSections ? "▾" : "▸"} Section Comparison ({sections.length})</button>
-          {showSections && (
-            <table className="section-table">
-              <thead><tr><th>SOP A</th><th>SOP B</th><th>Score</th><th>Status</th></tr></thead>
-              <tbody>{sections.map((sec, i) => (
-                <tr key={i} className={`section-row section-${sec.status}`}>
-                  <td>{sec.section_a ? <><span className="section-type-badge">{sec.section_a.type}</span> {sec.section_a.heading}</> : <span className="section-missing">—</span>}</td>
-                  <td>{sec.section_b ? <><span className="section-type-badge">{sec.section_b.type}</span> {sec.section_b.heading}</> : <span className="section-missing">—</span>}</td>
-                  <td><span className={`score-value ${getScoreClass(sec.similarity)}`}>{Math.round(sec.similarity * 100)}%</span></td>
-                  <td><span className={`section-status-badge status-${sec.status}`}>{sec.status}</span></td>
-                </tr>
-              ))}</tbody>
-            </table>
-          )}
-        </div>
-      )}
-      <div className="pair-actions">
-        <span style={{ fontSize: "12px", color: "#64748b", marginRight: "0.5rem" }}>Decision:</span>
-        {["retire", "merge", "distinct"].map(d => (
-          <button key={d} className={`decision-btn ${d} ${pair.user_decision === d ? "active" : ""}`} onClick={() => onDecision(pair.id, d)}>{d.charAt(0).toUpperCase() + d.slice(1)}</button>
-        ))}
-      </div>
     </div>
   );
 };
