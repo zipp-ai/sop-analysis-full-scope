@@ -30,6 +30,7 @@ const SOPLandscape = () => {
   const [filterDocType, setFilterDocType] = useState("all");
   const [showDeclared, setShowDeclared] = useState(true);
   const [showDiscovered, setShowDiscovered] = useState(true);
+  const [showLabels, setShowLabels] = useState(true);
 
   const svgRef = useRef(null);
   const containerRef = useRef(null);
@@ -244,9 +245,21 @@ const SOPLandscape = () => {
       }
     });
 
-    // Labels on hover (via title)
+    // Tooltip on hover
     nodeElements.append("title")
       .text(d => `${d.title}\n${d.functional_area} · ${d.site_name}${d.sop_code ? ` · ${d.sop_code}` : ""}`);
+
+    // Text labels
+    if (showLabels) {
+      nodeElements.append("text")
+        .attr("class", "node-label")
+        .attr("x", d => sizeScale(d.version_count || 1) + 4)
+        .attr("y", 4)
+        .text(d => d.title.length > 30 ? d.title.slice(0, 28) + "…" : d.title)
+        .attr("font-size", "10px")
+        .attr("fill", "#334155")
+        .attr("pointer-events", "none");
+    }
 
     // Selection brush
     const brush = d3.brush()
@@ -269,7 +282,7 @@ const SOPLandscape = () => {
     // Click on background to deselect
     svg.on("click", () => { setSelectedNode(null); });
 
-  }, [filteredNodes, discoveredEdges, declaredEdges, showDeclared, showDiscovered, colorScale, filteredNodeIds]);
+  }, [filteredNodes, discoveredEdges, declaredEdges, showDeclared, showDiscovered, showLabels, colorScale, filteredNodeIds]);
 
   if (loading || computing) {
     return (
@@ -312,6 +325,10 @@ const SOPLandscape = () => {
             </select>
           </div>
           <div className="controls-right">
+            <label className="edge-toggle">
+              <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} />
+              SOP Names
+            </label>
             <label className="edge-toggle">
               <input type="checkbox" checked={showDeclared} onChange={(e) => setShowDeclared(e.target.checked)} />
               <span className="edge-line-solid" /> Declared
