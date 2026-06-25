@@ -2,12 +2,17 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import Login from "../components/pages/Login/Login";
 import Dashboard from "../components/pages/Dashboard/Dashboard";
-import ProfileSettings from "../components/pages/ProfileSettings/ProfileSettings";
-import SOPLibrary from "../components/pages/SOPLibrary/SOPLibrary";
 import DuplicateDetection from "../components/pages/DuplicateDetection/DuplicateDetection";
 import ProtectedRoute from "../components/common/ProtectedRoute/ProtectedRoute";
 import NotFound from "../components/NotFound";
 import Layout from "../components/common/Layout/Layout";
+
+const PlaceholderPage = ({ title, description }) => (
+  <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
+    <h2>{title}</h2>
+    <p style={{ color: "#64748b" }}>{description}</p>
+  </div>
+);
 
 const routes = (user) => [
   {
@@ -25,21 +30,14 @@ const routes = (user) => [
     ),
   },
   {
-    path: "/profile",
-    element: (
-      <ProtectedRoute user={user}>
-        <Layout>
-          <ProfileSettings />
-        </Layout>
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: "/sop-library",
     element: (
       <ProtectedRoute user={user}>
         <Layout>
-          <SOPLibrary />
+          <PlaceholderPage
+            title="SOP Library"
+            description="SOPs are managed in the Duplicates page. Go to Duplicates to upload and manage SOPs."
+          />
         </Layout>
       </ProtectedRoute>
     ),
@@ -59,10 +57,10 @@ const routes = (user) => [
     element: (
       <ProtectedRoute user={user}>
         <Layout>
-          <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
-            <h2>Simplification</h2>
-            <p style={{ color: "#64748b" }}>Coming soon — Actionability scoring, flowchart generation, and readability analysis.</p>
-          </div>
+          <PlaceholderPage
+            title="Simplification"
+            description="Coming soon — Actionability scoring, flowchart generation, and readability analysis."
+          />
         </Layout>
       </ProtectedRoute>
     ),
@@ -72,10 +70,10 @@ const routes = (user) => [
     element: (
       <ProtectedRoute user={user}>
         <Layout>
-          <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
-            <h2>Regulatory Monitoring</h2>
-            <p style={{ color: "#64748b" }}>Coming soon — SOP-to-regulation mapping, compliance tracking, and gap detection.</p>
-          </div>
+          <PlaceholderPage
+            title="Regulatory Monitoring"
+            description="Coming soon — SOP-to-regulation mapping, compliance tracking, and gap detection."
+          />
         </Layout>
       </ProtectedRoute>
     ),
