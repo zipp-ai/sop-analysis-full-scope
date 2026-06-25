@@ -244,8 +244,13 @@ const DuplicateDetection = () => {
                 {activeTab === "analysis" ? (
                   /* ANALYSIS TAB: Heatmap with drill-down */
                   <div className="tab-content">
-                    <SimilarityHeatmap pairs={pairs} sopDocs={sopDocs} />
-                    {pairs.length === 0 && (
+                    {analysisSops.length > 0 ? (
+                      <SimilarityHeatmap pairs={pairs} sopDocs={sopDocs} />
+                    ) : pairs.length > 0 ? (
+                      <div className="empty-state-sm" style={{ marginTop: "1.5rem" }}>
+                        SOPs referenced by this analysis no longer exist. Please delete this analysis and run a new one.
+                      </div>
+                    ) : (
                       <div className="empty-state-sm" style={{ marginTop: "1.5rem" }}>No comparison data available.</div>
                     )}
                   </div>
