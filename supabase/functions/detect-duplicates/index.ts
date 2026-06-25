@@ -27,17 +27,6 @@ function levenshteinRatio(a: string, b: string): number {
   return maxLen === 0 ? 1 : 1 - matrix[la.length][lb.length] / maxLen;
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0, magA = 0, magB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    magA += a[i] * a[i];
-    magB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(magA) * Math.sqrt(magB);
-  return denom === 0 ? 0 : dot / denom;
-}
-
 interface SOPDoc {
   id: string;
   title: string;
@@ -45,14 +34,6 @@ interface SOPDoc {
   version: string | null;
   department: string | null;
   raw_text: string | null;
-}
-
-interface SectionData {
-  sop_id: string;
-  section_type: string;
-  heading: string;
-  content: string;
-  embedding: number[];
 }
 
 serve(async (req: Request) => {
@@ -71,10 +52,10 @@ serve(async (req: Request) => {
 
     const supabase = getServiceClient();
 
-    // Get all ready SOPs for this org
+    // Get all ready SOPs for this org (without raw_text to save memory)
     const { data: sops, error: sopError } = await supabase
       .from("sop_documents")
-      .select("id, title, sop_code, version, department, raw_text")
+      .select("id, title, sop_code, version, department")
       .eq("organization_id", organization_id)
       .eq("status", "ready");
 
@@ -98,10 +79,9 @@ serve(async (req: Request) => {
       .single();
 
     if (analysisError) throw new Error(`Analysis create error: ${analysisError.message}`);
-
     const analysisId = analysis.id;
 
-    // === LAYER 1: Metadata/Title Fuzzy Match ===
+    // === LAYER 1: Title Fuzzy Match — build candidate pairs ===
     const candidatePairs: Array<{
       sop_a: SOPDoc;
       sop_b: SOPDoc;
@@ -111,103 +91,86 @@ serve(async (req: Request) => {
     for (let i = 0; i < sops.length; i++) {
       for (let j = i + 1; j < sops.length; j++) {
         const titleSim = levenshteinRatio(sops[i].title, sops[j].title);
-
         let codeSim = 0;
         if (sops[i].sop_code && sops[j].sop_code) {
           codeSim = levenshteinRatio(sops[i].sop_code, sops[j].sop_code);
         }
-
         const sameDept =
-          sops[i].department &&
-          sops[j].department &&
+          sops[i].department && sops[j].department &&
           sops[i].department.toLowerCase() === sops[j].department.toLowerCase()
-            ? 0.1
-            : 0;
+            ? 0.1 : 0;
 
-        const metadataScore = Math.max(titleSim, codeSim) + sameDept;
+        const metadataScore = Math.min(Math.max(titleSim, codeSim) + sameDept, 1);
 
-        if (metadataScore > 0.5 || sops.length <= 20) {
+        // For small sets, compare all; otherwise filter
+        if (metadataScore > 0.4 || sops.length <= 30) {
           candidatePairs.push({
             sop_a: sops[i],
             sop_b: sops[j],
-            metadata_score: Math.min(metadataScore, 1),
+            metadata_score: Math.round(metadataScore * 100) / 100,
           });
         }
       }
     }
 
-    // === LAYER 2: Semantic Similarity via Embeddings ===
+    // === LAYER 2: Semantic Similarity via DB function (no embedding loading) ===
     await supabase
       .from("duplicate_analyses")
       .update({ status: "running_layer2" })
       .eq("id", analysisId);
 
-    // Fetch all sections with embeddings
-    const sopIds = sops.map((s) => s.id);
-    const { data: allSections, error: secError } = await supabase
-      .from("sop_sections")
-      .select("sop_id, section_type, heading, content, embedding")
-      .in("sop_id", sopIds);
-
-    if (secError) throw new Error(`Fetch sections error: ${secError.message}`);
-
-    const sectionsBySop: Record<string, SectionData[]> = {};
-    for (const sec of allSections || []) {
-      if (!sectionsBySop[sec.sop_id]) sectionsBySop[sec.sop_id] = [];
-      sectionsBySop[sec.sop_id].push(sec);
-    }
-
-    // Compute semantic similarity for candidate pairs
-    const scoredPairs: Array<{
-      sop_a: SOPDoc;
-      sop_b: SOPDoc;
-      metadata_score: number;
-      semantic_score: number;
-      scope_overlap_score: number;
-      overlapping_sections: any[];
-    }> = [];
+    const scoredPairs: Array<any> = [];
 
     for (const pair of candidatePairs) {
-      const sectionsA = sectionsBySop[pair.sop_a.id] || [];
-      const sectionsB = sectionsBySop[pair.sop_b.id] || [];
-
-      if (sectionsA.length === 0 || sectionsB.length === 0) {
-        scoredPairs.push({
-          ...pair,
-          semantic_score: 0,
-          scope_overlap_score: 0,
-          overlapping_sections: [],
+      // Use database function to compute similarity — avoids loading embeddings into memory
+      const { data: simResult } = await supabase
+        .rpc("compute_section_similarity", {
+          sop_a: pair.sop_a.id,
+          sop_b: pair.sop_b.id,
         });
-        continue;
-      }
 
-      // Compute best-match similarity between sections (full outer join style)
-      let totalSim = 0;
-      let count = 0;
+      const semanticScore = Math.round((simResult || 0) * 100) / 100;
+
+      // Get section-level comparison from DB
+      const { data: sectionsA } = await supabase
+        .from("sop_sections")
+        .select("section_type, heading, content")
+        .eq("sop_id", pair.sop_a.id)
+        .order("order_index");
+
+      const { data: sectionsB } = await supabase
+        .from("sop_sections")
+        .select("section_type, heading, content")
+        .eq("sop_id", pair.sop_b.id)
+        .order("order_index");
+
+      // Build section comparison (without embeddings — use type matching + heading similarity)
       const overlapping: any[] = [];
       const matchedB = new Set<number>();
 
-      for (const a of sectionsA) {
-        if (!a.embedding) continue;
-        let bestSim = 0;
-        let bestMatch: SectionData | null = null;
+      for (const a of (sectionsA || [])) {
+        let bestMatch: any = null;
         let bestIdx = -1;
+        let bestScore = 0;
 
-        for (let bi = 0; bi < sectionsB.length; bi++) {
-          const b = sectionsB[bi];
-          if (!b.embedding) continue;
-          const sim = cosineSimilarity(a.embedding, b.embedding);
-          if (sim > bestSim) {
-            bestSim = sim;
+        for (let bi = 0; bi < (sectionsB || []).length; bi++) {
+          const b = sectionsB![bi];
+          // Match by section_type first, then heading similarity
+          let score = 0;
+          if (a.section_type === b.section_type && a.section_type !== "other") {
+            score = 0.7;
+          }
+          const headingSim = levenshteinRatio(a.heading || "", b.heading || "");
+          score = Math.max(score, headingSim);
+
+          if (score > bestScore) {
+            bestScore = score;
             bestMatch = b;
             bestIdx = bi;
           }
         }
 
-        totalSim += bestSim;
-        count++;
-
-        if (bestMatch) {
+        if (bestMatch && bestIdx >= 0) {
           matchedB.add(bestIdx);
         }
 
@@ -216,15 +179,15 @@ serve(async (req: Request) => {
           section_b: bestMatch
             ? { type: bestMatch.section_type, heading: bestMatch.heading, content_preview: bestMatch.content.slice(0, 200) }
             : null,
-          similarity: Math.round(bestSim * 100) / 100,
-          status: bestSim > 0.9 ? "identical" : bestSim > 0.75 ? "similar" : bestSim > 0.5 ? "partial" : "different",
+          similarity: bestScore > 0.5 ? semanticScore : Math.round(bestScore * 100) / 100,
+          status: bestScore > 0.9 ? "identical" : bestScore > 0.7 ? "similar" : bestScore > 0.4 ? "partial" : "different",
         });
       }
 
-      // Add unmatched sections from B
-      for (let bi = 0; bi < sectionsB.length; bi++) {
+      // Unmatched sections from B
+      for (let bi = 0; bi < (sectionsB || []).length; bi++) {
         if (!matchedB.has(bi)) {
-          const b = sectionsB[bi];
+          const b = sectionsB![bi];
           overlapping.push({
             section_a: null,
             section_b: { type: b.section_type, heading: b.heading, content_preview: b.content.slice(0, 200) },
@@ -234,19 +197,14 @@ serve(async (req: Request) => {
         }
       }
 
-      const semanticScore = count > 0 ? totalSim / count : 0;
-
-      // Scope overlap: specifically compare scope sections
-      const scopeA = sectionsA.find((s) => s.section_type === "scope");
-      const scopeB = sectionsB.find((s) => s.section_type === "scope");
-      let scopeOverlap = 0;
-      if (scopeA?.embedding && scopeB?.embedding) {
-        scopeOverlap = cosineSimilarity(scopeA.embedding, scopeB.embedding);
-      }
+      // Scope overlap: check if both have scope sections with same type
+      const hasScope = (sectionsA || []).some(s => s.section_type === "scope") &&
+                       (sectionsB || []).some(s => s.section_type === "scope");
+      const scopeOverlap = hasScope ? semanticScore : 0;
 
       scoredPairs.push({
         ...pair,
-        semantic_score: Math.round(semanticScore * 100) / 100,
+        semantic_score: semanticScore,
         scope_overlap_score: Math.round(scopeOverlap * 100) / 100,
         overlapping_sections: overlapping,
       });
@@ -259,13 +217,12 @@ serve(async (req: Request) => {
       .eq("id", analysisId);
 
     const pairsToInsert = [];
-    const llmThreshold = 0.75;
 
     for (const pair of scoredPairs) {
       const needsLLM =
-        pair.semantic_score > llmThreshold ||
-        pair.metadata_score > 0.85 ||
-        pair.scope_overlap_score > 0.85;
+        pair.semantic_score > 0.7 ||
+        pair.metadata_score > 0.8 ||
+        pair.scope_overlap_score > 0.8;
 
       let llmClassification = null;
       let recommendedAction = null;
@@ -273,8 +230,20 @@ serve(async (req: Request) => {
 
       if (needsLLM) {
         try {
-          const textA = (pair.sop_a.raw_text || "").slice(0, 3000);
-          const textB = (pair.sop_b.raw_text || "").slice(0, 3000);
+          // Fetch raw_text only for LLM pairs (saves memory)
+          const { data: sopAData } = await supabase
+            .from("sop_documents")
+            .select("raw_text")
+            .eq("id", pair.sop_a.id)
+            .single();
+          const { data: sopBData } = await supabase
+            .from("sop_documents")
+            .select("raw_text")
+            .eq("id", pair.sop_b.id)
+            .single();
+
+          const textA = (sopAData?.raw_text || "").slice(0, 3000);
+          const textB = (sopBData?.raw_text || "").slice(0, 3000);
 
           const result = await chatCompletionJSON(
             `You are a GMP/pharmaceutical SOP analyst. Compare two SOPs and classify their relationship. Respond in JSON with: classification (full_duplicate | partial_overlap | version_variant | distinct), recommended_action (retire | merge | split | version_consolidate | review | none), reasoning (2-3 sentences explaining your assessment).`,
@@ -290,13 +259,12 @@ serve(async (req: Request) => {
         }
       }
 
-      // For pairs without LLM, classify based on scores
       if (!llmClassification) {
         const maxScore = Math.max(pair.metadata_score, pair.semantic_score);
         if (maxScore > 0.92) {
           llmClassification = "full_duplicate";
           recommendedAction = "retire";
-        } else if (maxScore > 0.75) {
+        } else if (maxScore > 0.7) {
           llmClassification = "partial_overlap";
           recommendedAction = "review";
         } else {
@@ -319,7 +287,7 @@ serve(async (req: Request) => {
       });
     }
 
-    // Insert all pairs
+    // Insert pairs
     if (pairsToInsert.length > 0) {
       const { error: pairError } = await supabase
         .from("duplicate_pairs")
@@ -327,7 +295,7 @@ serve(async (req: Request) => {
       if (pairError) throw new Error(`Pair insert error: ${pairError.message}`);
     }
 
-    // Build clusters using union-find on pairs with classification != 'distinct'
+    // Build clusters
     const flaggedPairs = pairsToInsert.filter(
       (p) => p.llm_classification !== "distinct"
     );
@@ -346,7 +314,6 @@ serve(async (req: Request) => {
       union(p.sop_a_id, p.sop_b_id);
     }
 
-    // Group SOPs by cluster root
     const clusterMap: Record<string, Set<string>> = {};
     for (const p of flaggedPairs) {
       const root = find(p.sop_a_id);
@@ -355,7 +322,6 @@ serve(async (req: Request) => {
       clusterMap[root].add(p.sop_b_id);
     }
 
-    // Create cluster records
     const sopTitleMap: Record<string, string> = {};
     for (const s of sops) sopTitleMap[s.id] = s.title;
 
@@ -374,11 +340,10 @@ serve(async (req: Request) => {
       const { error: clusterError } = await supabase
         .from("duplicate_clusters")
         .insert(clusters);
-      if (clusterError)
-        throw new Error(`Cluster insert error: ${clusterError.message}`);
+      if (clusterError) throw new Error(`Cluster insert error: ${clusterError.message}`);
     }
 
-    // Finalize analysis
+    // Finalize
     await supabase
       .from("duplicate_analyses")
       .update({
