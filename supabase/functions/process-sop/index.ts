@@ -1,16 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { getServiceClient } from "../_shared/supabase.ts";
-import { generateEmbeddings } from "../_shared/openai.ts";
+import { generateEmbeddings, chatCompletionJSON } from "../_shared/openai.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-
-const SECTION_PATTERNS: Record<string, RegExp> = {
-  purpose: /^(?:\d+[\.\)]\s*)?(?:purpose|objective|aim)\b/i,
-  scope: /^(?:\d+[\.\)]\s*)?scope\b/i,
-  responsibilities: /^(?:\d+[\.\)]\s*)?(?:responsibilit|roles?\s+and|accountabilit)/i,
-  procedure: /^(?:\d+[\.\)]\s*)?(?:procedure|process|method|steps?|instructions?)\b/i,
-  references: /^(?:\d+[\.\)]\s*)?(?:references?|related\s+documents?|applicable\s+documents?)\b/i,
-  definitions: /^(?:\d+[\.\)]\s*)?(?:definitions?|glossary|abbreviations?|terms?)\b/i,
-};
 
 interface Section {
   section_type: string;
@@ -19,20 +10,68 @@ interface Section {
   order_index: number;
 }
 
-function classifyHeading(heading: string): string {
-  for (const [type, pattern] of Object.entries(SECTION_PATTERNS)) {
-    if (pattern.test(heading.trim())) return type;
+async function splitIntoSections(text: string): Promise<Section[]> {
+  // Use LLM to identify and split sections
+  const textSnippet = text.slice(0, 12000);
+
+  try {
+    const result = await chatCompletionJSON(
+      `You are an expert in pharmaceutical GMP SOPs. Analyze the given SOP text and split it into its logical sections.
+
+Return JSON with a "sections" array. Each section should have:
+- section_type: one of [purpose, scope, responsibilities, procedure, references, definitions, other]
+- heading: the section heading as it appears in the document
+- content: the full text content of that section (do NOT summarize - include all text)
+
+Important rules:
+- Identify ALL sections present in the document
+- Common GMP SOP sections: Purpose/Objective, Scope, Definitions, Responsibilities, Procedure/Process, References, Annexures, Abbreviations, Distribution List, Revision History
+- Map non-standard headings to the closest section_type (e.g., "Annexures" → other, "Abbreviations" → definitions, "Distribution" → other)
+- If a section has sub-sections, keep them together under the parent section
+- Preserve the original text content as-is, do not paraphrase
+- If the document structure is unclear, split by topic blocks`,
+      `SOP Text:\n${textSnippet}`
+    );
+
+    if (result.sections && Array.isArray(result.sections)) {
+      return result.sections.map((s: any, i: number) => ({
+        section_type: s.section_type || "other",
+        heading: s.heading || `Section ${i + 1}`,
+        content: s.content || "",
+        order_index: i,
+      }));
+    }
+  } catch (e) {
+    console.error("LLM section split failed, falling back to regex:", e);
   }
-  return "other";
+
+  // Fallback: regex-based splitting
+  return regexSplit(text);
 }
 
-function splitIntoSections(text: string): Section[] {
-  const lines = text.split("\n");
+function regexSplit(text: string): Section[] {
+  const lines = text.split(/\n/);
   const sections: Section[] = [];
-  let currentHeading = "Document Start";
+  let currentHeading = "Full Document";
   let currentType = "other";
   let currentContent: string[] = [];
   let orderIndex = 0;
+
+  const typePatterns: Record<string, RegExp> = {
+    purpose: /(?:purpose|objective|aim)/i,
+    scope: /\bscope\b/i,
+    responsibilities: /(?:responsibilit|roles?\s+and|accountabilit)/i,
+    procedure: /(?:procedure|process|method|steps?|instructions?)\b/i,
+    references: /(?:references?|related\s+documents?|applicable\s+documents?)/i,
+    definitions: /(?:definitions?|glossary|abbreviations?|terms?)\b/i,
+  };
+
+  function classifyHeading(h: string): string {
+    for (const [type, pattern] of Object.entries(typePatterns)) {
+      if (pattern.test(h)) return type;
+    }
+    return "other";
+  }
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -41,11 +80,14 @@ function splitIntoSections(text: string): Section[] {
       continue;
     }
 
+    // Detect headings: numbered sections, ALL CAPS short lines, or lines ending with colon
     const isHeading =
-      trimmed.length < 100 &&
-      (trimmed === trimmed.toUpperCase() ||
-        /^\d+[\.\)]\s+[A-Z]/.test(trimmed) ||
-        /^[A-Z][A-Z\s&\/]+$/.test(trimmed));
+      trimmed.length < 120 &&
+      (/^\d+[\.\)]\s+/.test(trimmed) ||
+       /^\d+\.\d+\s+/.test(trimmed) ||
+       (trimmed === trimmed.toUpperCase() && trimmed.length > 3 && trimmed.length < 80) ||
+       /^[A-Z][A-Z\s&\/,\-]+:?\s*$/.test(trimmed) ||
+       /^(?:ANNEXURE|APPENDIX|ATTACHMENT|TABLE)\s/i.test(trimmed));
 
     if (isHeading && currentContent.length > 0) {
       const content = currentContent.join("\n").trim();
@@ -103,13 +145,11 @@ serve(async (req: Request) => {
 
     const supabase = getServiceClient();
 
-    // Update status to processing
     await supabase
       .from("sop_documents")
       .update({ status: "processing" })
       .eq("id", sop_id);
 
-    // Get the SOP document
     const { data: sop, error: sopError } = await supabase
       .from("sop_documents")
       .select("*")
@@ -122,14 +162,12 @@ serve(async (req: Request) => {
 
     let rawText = sop.raw_text;
 
-    // If no raw_text, try to download and extract from file_url
     if (!rawText && sop.file_url) {
       const { data: fileData, error: fileError } = await supabase.storage
         .from("sops")
         .download(sop.file_url);
 
       if (fileError) throw new Error(`File download error: ${fileError.message}`);
-
       rawText = await fileData.text();
 
       await supabase
@@ -150,8 +188,8 @@ serve(async (req: Request) => {
       );
     }
 
-    // Split into sections
-    const sections = splitIntoSections(rawText);
+    // Split into sections using LLM
+    const sections = await splitIntoSections(rawText);
 
     // Generate embeddings in batch
     const texts = sections.map((s) => `${s.heading}\n${s.content}`);
@@ -176,7 +214,6 @@ serve(async (req: Request) => {
 
     if (insertError) throw new Error(`Section insert error: ${insertError.message}`);
 
-    // Update SOP status to ready
     await supabase
       .from("sop_documents")
       .update({ status: "ready", updated_at: new Date().toISOString() })
