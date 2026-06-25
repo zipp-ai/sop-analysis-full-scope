@@ -88,16 +88,13 @@ const duplicateService = {
   async getPairs(analysisId) {
     const { data, error } = await supabase
       .from('duplicate_pairs')
-      .select(`
-        *,
-        sop_a:sop_documents!duplicate_pairs_sop_a_id_fkey(id, title, sop_code, version, department, site),
-        sop_b:sop_documents!duplicate_pairs_sop_b_id_fkey(id, title, sop_code, version, department, site)
-      `)
-      .eq('analysis_id', analysisId)
-      .order('overall_score', { ascending: false });
+      .select('*')
+      .eq('analysis_id', analysisId);
 
     if (error) throw new Error(error.message);
-    return data;
+
+    // Sort by overall_score descending
+    return (data || []).sort((a, b) => (b.overall_score || 0) - (a.overall_score || 0));
   },
 
   // Get clusters for an analysis
