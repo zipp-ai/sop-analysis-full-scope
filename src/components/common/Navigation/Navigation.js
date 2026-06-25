@@ -14,6 +14,7 @@ const Navigation = () => {
     { name: 'SOPs', path: '/sop-library' },
     { name: 'Duplicates', path: '/duplicates' },
     { name: 'Simplification', path: '/simplification' },
+    { name: 'Landscape', path: '/landscape' },
     { name: 'Monitoring', path: '/monitoring' },
   ];
 
