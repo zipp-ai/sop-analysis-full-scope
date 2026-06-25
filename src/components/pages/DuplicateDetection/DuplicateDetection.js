@@ -130,6 +130,34 @@ const DuplicateDetection = () => {
     }
   };
 
+  const handleDeleteAnalysis = async (analysisId) => {
+    try {
+      await duplicateService.deleteAnalysis(analysisId);
+      toastService.success("Analysis deleted");
+      if (selectedAnalysis?.id === analysisId) {
+        setSelectedAnalysis(null);
+        setPairs([]);
+        setClusters([]);
+      }
+      await fetchData();
+    } catch (err) {
+      toastService.error("Delete failed: " + err.message);
+    }
+  };
+
+  const handleDeleteAllAnalyses = async () => {
+    try {
+      await duplicateService.deleteAllAnalyses(organizationId);
+      toastService.success("All analyses deleted");
+      setSelectedAnalysis(null);
+      setPairs([]);
+      setClusters([]);
+      await fetchData();
+    } catch (err) {
+      toastService.error("Delete failed: " + err.message);
+    }
+  };
+
   const handleDecision = async (pairId, decision) => {
     try {
       await duplicateService.updatePairDecision(pairId, decision);
@@ -315,12 +343,20 @@ const DuplicateDetection = () => {
         {/* Results */}
         {selectedAnalysis && selectedAnalysis.status === "completed" && (
           <div className="results-section">
-            <h3>
-              Duplicate Analysis Results
-              <span style={{ fontWeight: 400, fontSize: "13px", color: "#64748b", marginLeft: "0.75rem" }}>
-                {formatDate(selectedAnalysis.completed_at)} · {selectedAnalysis.total_sops} SOPs · {selectedAnalysis.flagged_pairs} flagged
-              </span>
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h3 style={{ margin: 0 }}>
+                Duplicate Analysis Results
+                <span style={{ fontWeight: 400, fontSize: "13px", color: "#64748b", marginLeft: "0.75rem" }}>
+                  {formatDate(selectedAnalysis.completed_at)} · {selectedAnalysis.total_sops} SOPs · {selectedAnalysis.flagged_pairs} flagged
+                </span>
+              </h3>
+              <button
+                className="delete-analysis-btn"
+                onClick={() => handleDeleteAnalysis(selectedAnalysis.id)}
+              >
+                Delete This Analysis
+              </button>
+            </div>
 
             {clusters.length === 0 && filteredPairs.length === 0 ? (
               <div className="empty-state">
@@ -437,28 +473,47 @@ const DuplicateDetection = () => {
         )}
 
         {/* Analysis History */}
-        {analyses.length > 1 && (
+        {analyses.length > 0 && (
           <div className="analysis-history">
-            <h3>Analysis History</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3>Analysis History</h3>
+              {analyses.length > 1 && (
+                <button className="clear-all-btn" onClick={handleDeleteAllAnalyses}>
+                  Clear All
+                </button>
+              )}
+            </div>
             {analyses.map((analysis) => (
               <div
                 key={analysis.id}
                 className={`history-item ${selectedAnalysis?.id === analysis.id ? "active" : ""}`}
-                onClick={() => loadAnalysisResults(analysis)}
               >
-                <div className="history-meta">
-                  <span className={`status-badge ${analysis.status}`}>
-                    {STATUS_LABELS[analysis.status] || analysis.status}
-                  </span>
-                  <span className="history-date">
-                    {formatDate(analysis.created_at)}
-                  </span>
+                <div
+                  className="history-item-main"
+                  onClick={() => loadAnalysisResults(analysis)}
+                  style={{ flex: 1, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                >
+                  <div className="history-meta">
+                    <span className={`status-badge ${analysis.status}`}>
+                      {STATUS_LABELS[analysis.status] || analysis.status}
+                    </span>
+                    <span className="history-date">
+                      {formatDate(analysis.created_at)}
+                    </span>
+                  </div>
+                  <div className="history-stats">
+                    <span>{analysis.total_sops} SOPs</span>
+                    <span>{analysis.flagged_pairs} flagged</span>
+                    <span>{analysis.cluster_count} clusters</span>
+                  </div>
                 </div>
-                <div className="history-stats">
-                  <span>{analysis.total_sops} SOPs</span>
-                  <span>{analysis.flagged_pairs} flagged</span>
-                  <span>{analysis.cluster_count} clusters</span>
-                </div>
+                <button
+                  className="history-delete-btn"
+                  onClick={(e) => { e.stopPropagation(); handleDeleteAnalysis(analysis.id); }}
+                  title="Delete this analysis"
+                >
+                  ×
+                </button>
               </div>
             ))}
           </div>

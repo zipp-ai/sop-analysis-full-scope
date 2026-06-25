@@ -113,6 +113,26 @@ const duplicateService = {
     return data;
   },
 
+  // Delete an analysis and all its pairs/clusters
+  async deleteAnalysis(analysisId) {
+    const { error } = await supabase
+      .from('duplicate_analyses')
+      .delete()
+      .eq('id', analysisId);
+
+    if (error) throw new Error(error.message);
+  },
+
+  // Delete all analyses for an org
+  async deleteAllAnalyses(organizationId) {
+    const { error } = await supabase
+      .from('duplicate_analyses')
+      .delete()
+      .eq('organization_id', organizationId);
+
+    if (error) throw new Error(error.message);
+  },
+
   // Delete a SOP document
   async deleteSOPDocument(sopId) {
     const { error } = await supabase
