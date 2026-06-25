@@ -85,6 +85,7 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
           sopCode: metadata.sop_code || "",
           version: metadata.version || "",
           department: metadata.department || "General",
+          site: metadata.site || "Global",
           effectiveDate: metadata.effective_date || "",
           summary: metadata.summary || "",
           status: "ready",
@@ -98,6 +99,7 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
           sopCode: "",
           version: "",
           department: "General",
+          site: "Global",
           effectiveDate: "",
           summary: "",
           status: "error",
@@ -141,6 +143,7 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
           sopCode: entry.sopCode,
           version: entry.version,
           department: entry.department,
+          site: entry.site,
           fileUrl: `bulk-upload/${entry.fileName}`,
           rawText: entry.rawText,
           organizationId,
@@ -253,6 +256,7 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
                   <th>SOP Code</th>
                   <th>Version</th>
                   <th>Department</th>
+                  <th>Site</th>
                   <th>Summary</th>
                   <th></th>
                 </tr>
@@ -306,6 +310,16 @@ const BulkUpload = ({ organizationId, userId, onComplete, onClose }) => {
                           <option key={d} value={d}>{d}</option>
                         ))}
                       </select>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={entry.site}
+                        onChange={(e) => updateEntry(i, "site", e.target.value)}
+                        className="review-input review-input-sm"
+                        placeholder="Global"
+                        disabled={entry.status === "error"}
+                      />
                     </td>
                     <td>
                       <input

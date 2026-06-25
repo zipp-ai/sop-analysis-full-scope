@@ -181,33 +181,55 @@ serve(async (req: Request) => {
         continue;
       }
 
-      // Compute best-match similarity between sections
+      // Compute best-match similarity between sections (full outer join style)
       let totalSim = 0;
       let count = 0;
       const overlapping: any[] = [];
+      const matchedB = new Set<number>();
 
       for (const a of sectionsA) {
         if (!a.embedding) continue;
         let bestSim = 0;
         let bestMatch: SectionData | null = null;
+        let bestIdx = -1;
 
-        for (const b of sectionsB) {
+        for (let bi = 0; bi < sectionsB.length; bi++) {
+          const b = sectionsB[bi];
           if (!b.embedding) continue;
           const sim = cosineSimilarity(a.embedding, b.embedding);
           if (sim > bestSim) {
             bestSim = sim;
             bestMatch = b;
+            bestIdx = bi;
           }
         }
 
         totalSim += bestSim;
         count++;
 
-        if (bestSim > 0.8 && bestMatch) {
+        if (bestMatch) {
+          matchedB.add(bestIdx);
+        }
+
+        overlapping.push({
+          section_a: { type: a.section_type, heading: a.heading, content_preview: a.content.slice(0, 200) },
+          section_b: bestMatch
+            ? { type: bestMatch.section_type, heading: bestMatch.heading, content_preview: bestMatch.content.slice(0, 200) }
+            : null,
+          similarity: Math.round(bestSim * 100) / 100,
+          status: bestSim > 0.9 ? "identical" : bestSim > 0.75 ? "similar" : bestSim > 0.5 ? "partial" : "different",
+        });
+      }
+
+      // Add unmatched sections from B
+      for (let bi = 0; bi < sectionsB.length; bi++) {
+        if (!matchedB.has(bi)) {
+          const b = sectionsB[bi];
           overlapping.push({
-            section_a: { type: a.section_type, heading: a.heading },
-            section_b: { type: bestMatch.section_type, heading: bestMatch.heading },
-            similarity: Math.round(bestSim * 100) / 100,
+            section_a: null,
+            section_b: { type: b.section_type, heading: b.heading, content_preview: b.content.slice(0, 200) },
+            similarity: 0,
+            status: "only_in_b",
           });
         }
       }

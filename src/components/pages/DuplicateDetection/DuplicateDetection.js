@@ -287,7 +287,7 @@ const DuplicateDetection = () => {
                 <div className="sop-doc-info">
                   <h4>{doc.title}</h4>
                   <p>
-                    {[doc.sop_code, doc.department, doc.version && `v${doc.version}`]
+                    {[doc.sop_code, doc.department, doc.site, doc.version && `v${doc.version}`]
                       .filter(Boolean)
                       .join(" · ") || "No metadata"}
                   </p>
@@ -498,8 +498,10 @@ const DuplicateDetection = () => {
 
 // Sub-component for individual pair display
 const PairCard = ({ pair, onDecision, getScoreClass }) => {
+  const [showSections, setShowSections] = useState(false);
   const sopA = pair.sop_a || {};
   const sopB = pair.sop_b || {};
+  const sections = pair.overlapping_sections || [];
 
   return (
     <div className="pair-card">
@@ -507,7 +509,7 @@ const PairCard = ({ pair, onDecision, getScoreClass }) => {
         <div className="pair-sop">
           <h5>{sopA.title || "SOP A"}</h5>
           <p>
-            {[sopA.sop_code, sopA.department, sopA.version && `v${sopA.version}`]
+            {[sopA.sop_code, sopA.department, sopA.site, sopA.version && `v${sopA.version}`]
               .filter(Boolean)
               .join(" · ")}
           </p>
@@ -516,7 +518,7 @@ const PairCard = ({ pair, onDecision, getScoreClass }) => {
         <div className="pair-sop">
           <h5>{sopB.title || "SOP B"}</h5>
           <p>
-            {[sopB.sop_code, sopB.department, sopB.version && `v${sopB.version}`]
+            {[sopB.sop_code, sopB.department, sopB.site, sopB.version && `v${sopB.version}`]
               .filter(Boolean)
               .join(" · ")}
           </p>
@@ -554,6 +556,76 @@ const PairCard = ({ pair, onDecision, getScoreClass }) => {
 
       {pair.llm_reasoning && (
         <div className="pair-reasoning">{pair.llm_reasoning}</div>
+      )}
+
+      {/* Section-wise comparison */}
+      {sections.length > 0 && (
+        <div className="section-comparison">
+          <button
+            className="section-toggle"
+            onClick={() => setShowSections(!showSections)}
+          >
+            {showSections ? "▾" : "▸"} Section-wise Comparison ({sections.length} sections)
+          </button>
+          {showSections && (
+            <table className="section-table">
+              <thead>
+                <tr>
+                  <th>SOP A Section</th>
+                  <th>SOP B Section</th>
+                  <th>Similarity</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sections.map((sec, i) => (
+                  <tr key={i} className={`section-row section-${sec.status}`}>
+                    <td>
+                      {sec.section_a ? (
+                        <>
+                          <span className="section-type-badge">{sec.section_a.type}</span>
+                          <span className="section-heading">{sec.section_a.heading}</span>
+                          {sec.section_a.content_preview && (
+                            <span className="section-preview">{sec.section_a.content_preview}</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="section-missing">— Not present —</span>
+                      )}
+                    </td>
+                    <td>
+                      {sec.section_b ? (
+                        <>
+                          <span className="section-type-badge">{sec.section_b.type}</span>
+                          <span className="section-heading">{sec.section_b.heading}</span>
+                          {sec.section_b.content_preview && (
+                            <span className="section-preview">{sec.section_b.content_preview}</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="section-missing">— Not present —</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`score-value ${getScoreClass(sec.similarity)}`}>
+                        {Math.round(sec.similarity * 100)}%
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`section-status-badge status-${sec.status}`}>
+                        {sec.status === "identical" ? "Identical" :
+                         sec.status === "similar" ? "Similar" :
+                         sec.status === "partial" ? "Partial" :
+                         sec.status === "only_in_b" ? "Only in B" :
+                         "Different"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       )}
 
       <div className="pair-actions">

@@ -3,7 +3,7 @@ import edgeFunctionService from './edgeFunctionService';
 
 const duplicateService = {
   // Upload and process a new SOP for the analysis pipeline
-  async uploadSOP({ title, sopCode, version, effectiveDate, department, fileUrl, rawText, organizationId, userId }) {
+  async uploadSOP({ title, sopCode, version, effectiveDate, department, site, fileUrl, rawText, organizationId, userId }) {
     const { data, error } = await supabase
       .from('sop_documents')
       .insert({
@@ -12,6 +12,7 @@ const duplicateService = {
         version: version || null,
         effective_date: effectiveDate || null,
         department: department || null,
+        site: site || 'Global',
         file_url: fileUrl,
         raw_text: rawText,
         organization_id: organizationId,
@@ -77,8 +78,8 @@ const duplicateService = {
       .from('duplicate_pairs')
       .select(`
         *,
-        sop_a:sop_documents!duplicate_pairs_sop_a_id_fkey(id, title, sop_code, version, department),
-        sop_b:sop_documents!duplicate_pairs_sop_b_id_fkey(id, title, sop_code, version, department)
+        sop_a:sop_documents!duplicate_pairs_sop_a_id_fkey(id, title, sop_code, version, department, site),
+        sop_b:sop_documents!duplicate_pairs_sop_b_id_fkey(id, title, sop_code, version, department, site)
       `)
       .eq('analysis_id', analysisId)
       .order('overall_score', { ascending: false });

@@ -25,6 +25,7 @@ serve(async (req: Request) => {
 - version: the version number (e.g., "1.0", "3", "Rev 2") or null if not found
 - department: one of [Quality Assurance, Quality Control, Manufacturing, Packaging, Warehouse, Engineering, Regulatory Affairs, Human Resources, General] - infer from content if not explicitly stated
 - effective_date: the effective date in YYYY-MM-DD format or null if not found
+- site: the site/location this SOP applies to (e.g., "Plant 1", "Unit 2", "Hyderabad", "Mumbai") or "Global" if it applies across all sites
 - summary: one-line summary of what this SOP covers (max 100 chars)`,
       `File name: ${file_name || "unknown"}\n\nSOP Text:\n${textSnippet}`
     );
