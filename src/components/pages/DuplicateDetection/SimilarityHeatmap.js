@@ -56,7 +56,7 @@ const SimilarityHeatmap = ({ pairs, sopDocs }) => {
     for (const pair of pairs) {
       const key = `${pair.sop_a_id}__${pair.sop_b_id}`;
       const keyRev = `${pair.sop_b_id}__${pair.sop_a_id}`;
-      const score = Math.max(pair.semantic_score || 0, pair.metadata_score || 0);
+      const score = pair.semantic_score || 0;
       matrix[key] = score;
       matrix[keyRev] = score;
 
@@ -206,7 +206,7 @@ const SimilarityHeatmap = ({ pairs, sopDocs }) => {
                   const sopA = sopDocs.find((d) => d.id === pair.sop_a_id);
                   const sopB = sopDocs.find((d) => d.id === pair.sop_b_id);
                   const sectionScores = getSectionScores(pair.overlapping_sections);
-                  const overallScore = Math.max(pair.semantic_score || 0, pair.metadata_score || 0);
+                  const overallScore = pair.semantic_score || 0;
 
                   return (
                     <tr
