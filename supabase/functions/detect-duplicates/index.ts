@@ -137,7 +137,7 @@ serve(async (req: Request) => {
     const scoredPairs: Array<any> = [];
 
     for (const pair of candidatePairs) {
-      // Use database function to compute similarity — avoids loading embeddings into memory
+      // Use DB functions for embedding-based similarity (avoids loading vectors into JS memory)
       const { data: simResult } = await supabase
         .rpc("compute_section_similarity", {
           sop_a: pair.sop_a.id,
@@ -146,76 +146,36 @@ serve(async (req: Request) => {
 
       const semanticScore = Math.round((simResult || 0) * 100) / 100;
 
-      // Get section-level comparison from DB
-      const { data: sectionsA } = await supabase
-        .from("sop_sections")
-        .select("section_type, heading, content")
-        .eq("sop_id", pair.sop_a.id)
-        .order("order_index");
-
-      const { data: sectionsB } = await supabase
-        .from("sop_sections")
-        .select("section_type, heading, content")
-        .eq("sop_id", pair.sop_b.id)
-        .order("order_index");
-
-      // Build section comparison (without embeddings — use type matching + heading similarity)
-      const overlapping: any[] = [];
-      const matchedB = new Set<number>();
-
-      for (const a of (sectionsA || [])) {
-        let bestMatch: any = null;
-        let bestIdx = -1;
-        let bestScore = 0;
-
-        for (let bi = 0; bi < (sectionsB || []).length; bi++) {
-          const b = sectionsB![bi];
-          // Match by section_type first, then heading similarity
-          let score = 0;
-          if (a.section_type === b.section_type && a.section_type !== "other") {
-            score = 0.7;
-          }
-          const headingSim = levenshteinRatio(a.heading || "", b.heading || "");
-          score = Math.max(score, headingSim);
-
-          if (score > bestScore) {
-            bestScore = score;
-            bestMatch = b;
-            bestIdx = bi;
-          }
-        }
-
-        if (bestMatch && bestIdx >= 0) {
-          matchedB.add(bestIdx);
-        }
-
-        overlapping.push({
-          section_a: { type: a.section_type, heading: a.heading, content_preview: a.content.slice(0, 200) },
-          section_b: bestMatch
-            ? { type: bestMatch.section_type, heading: bestMatch.heading, content_preview: bestMatch.content.slice(0, 200) }
-            : null,
-          similarity: bestScore > 0.5 ? semanticScore : Math.round(bestScore * 100) / 100,
-          status: bestScore > 0.9 ? "identical" : bestScore > 0.7 ? "similar" : bestScore > 0.4 ? "partial" : "different",
+      // Get per-section similarity pairs from DB (embedding cosine similarity)
+      const { data: sectionPairs } = await supabase
+        .rpc("compute_section_pairs", {
+          sop_a_id: pair.sop_a.id,
+          sop_b_id: pair.sop_b.id,
         });
-      }
 
-      // Unmatched sections from B
-      for (let bi = 0; bi < (sectionsB || []).length; bi++) {
-        if (!matchedB.has(bi)) {
-          const b = sectionsB![bi];
-          overlapping.push({
-            section_a: null,
-            section_b: { type: b.section_type, heading: b.heading, content_preview: b.content.slice(0, 200) },
-            similarity: 0,
-            status: "only_in_b",
-          });
-        }
-      }
+      const overlapping = (sectionPairs || []).map((sp: any) => {
+        const sim = Math.round((sp.similarity || 0) * 100) / 100;
+        return {
+          section_a: sp.section_a_type ? {
+            type: sp.section_a_type,
+            heading: sp.section_a_heading,
+            content_preview: sp.section_a_content_preview,
+          } : null,
+          section_b: sp.section_b_type ? {
+            type: sp.section_b_type,
+            heading: sp.section_b_heading,
+            content_preview: sp.section_b_content_preview,
+          } : null,
+          similarity: sim,
+          status: sim > 0.92 ? "identical" : sim > 0.8 ? "similar" : sim > 0.6 ? "partial" : sp.section_a_type ? "different" : "only_in_b",
+        };
+      });
 
-      // Scope overlap: check if both have scope sections with same type
-      const hasScope = (sectionsA || []).some(s => s.section_type === "scope") &&
-                       (sectionsB || []).some(s => s.section_type === "scope");
-      const scopeOverlap = hasScope ? semanticScore : 0;
+      // Scope overlap from section pairs
+      const scopePair = overlapping.find((o: any) =>
+        o.section_a?.type === "scope" && o.section_b?.type === "scope"
+      );
+      const scopeOverlap = scopePair ? scopePair.similarity : 0;
 
       scoredPairs.push({
         ...pair,
