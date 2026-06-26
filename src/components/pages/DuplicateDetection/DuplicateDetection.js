@@ -71,28 +71,24 @@ const DuplicateDetection = () => {
   };
 
   const buildVerdicts = (pairsData, docs) => {
-    // Collect all SOPs involved in this analysis
     const sopIds = new Set();
     pairsData.forEach(p => { sopIds.add(p.sop_a_id); sopIds.add(p.sop_b_id); });
 
     const v = {};
     sopIds.forEach(id => {
-      // Check if this SOP is flagged as duplicate in any pair
-      const isDuplicate = pairsData.some(p =>
+      // Find the highest semantic similarity for this SOP
+      const maxSem = pairsData
+        .filter(p => p.sop_a_id === id || p.sop_b_id === id)
+        .reduce((max, p) => Math.max(max, p.semantic_score || 0), 0);
+
+      // Only mark as duplicate if semantic similarity > 85% AND LLM agrees
+      const hasHighSimDuplicate = pairsData.some(p =>
         (p.sop_a_id === id || p.sop_b_id === id) &&
-        (p.llm_classification === "full_duplicate" || p.llm_classification === "partial_overlap" || p.llm_classification === "version_variant")
+        (p.semantic_score || 0) > 0.85 &&
+        p.llm_classification === "full_duplicate"
       );
-      // Check user decisions
-      const userMarked = pairsData.find(p =>
-        (p.sop_a_id === id || p.sop_b_id === id) && p.user_decision
-      );
-      if (userMarked?.user_decision === "retire") {
-        v[id] = "duplicate";
-      } else if (userMarked?.user_decision === "distinct") {
-        v[id] = "continue";
-      } else {
-        v[id] = isDuplicate ? "duplicate" : "continue";
-      }
+
+      v[id] = hasHighSimDuplicate ? "duplicate" : "continue";
     });
     setVerdicts(v);
   };
