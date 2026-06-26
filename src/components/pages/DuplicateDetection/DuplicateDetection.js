@@ -143,7 +143,7 @@ const DuplicateDetection = () => {
     if (selectedSopIds.length < 2) { toastService.error("Select at least 2 SOPs"); return; }
     setShowAnalysisConfig(false); setAnalyzing(true);
     toastService.info("Duplicate analysis started...");
-    duplicateService.runAnalysis(organizationId)
+    duplicateService.runAnalysis(organizationId, { name: analysisName, categoryId: selectedCategory, sopIds: selectedSopIds })
       .then(() => { toastService.success("Analysis complete"); fetchData(); })
       .catch((e) => toastService.error("Analysis failed: " + e.message))
       .finally(() => setAnalyzing(false));

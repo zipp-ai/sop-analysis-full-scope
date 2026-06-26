@@ -56,8 +56,8 @@ const duplicateService = {
   },
 
   // Run duplicate detection analysis
-  async runAnalysis(organizationId) {
-    return edgeFunctionService.detectDuplicates(organizationId);
+  async runAnalysis(organizationId, { name, categoryId, sopIds } = {}) {
+    return edgeFunctionService.detectDuplicates(organizationId, { name, category_id: categoryId, sop_ids: sopIds });
   },
 
   // Get all analyses for an org

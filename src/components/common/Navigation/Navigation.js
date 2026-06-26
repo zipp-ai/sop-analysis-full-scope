@@ -10,12 +10,11 @@ const Navigation = () => {
   const dropdownRef = useRef(null);
 
   const navItems = [
-    { name: 'Overview', path: '/dashboard' },
-    { name: 'SOPs', path: '/sop-library' },
-    { name: 'Duplicates', path: '/duplicates' },
+    { name: 'SOP Library', path: '/sop-library' },
+    { name: 'SOP Cleanup', path: '/duplicates' },
     { name: 'Simplification', path: '/simplification' },
     { name: 'Landscape', path: '/landscape' },
-    { name: 'Monitoring', path: '/monitoring' },
+    { name: 'Regulatory Monitoring', path: '/monitoring' },
   ];
 
   const handleLogout = async () => {
@@ -44,7 +43,7 @@ const Navigation = () => {
     <div className="navigation-container">
       <div className="nav-header">
         <div className="nav-logo">
-          <Link to="/dashboard">
+          <Link to="/sop-library">
             <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
               <img src="/zipplogo.png" alt="Zipp Logo" className="logo-image" />
               <span style={{color:'#000'}}>|</span>

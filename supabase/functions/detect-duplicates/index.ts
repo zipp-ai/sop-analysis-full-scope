@@ -42,7 +42,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { organization_id } = await req.json();
+    const { organization_id, name, category_id, sop_ids } = await req.json();
     if (!organization_id) {
       return new Response(
         JSON.stringify({ error: "organization_id required" }),
@@ -52,12 +52,20 @@ serve(async (req: Request) => {
 
     const supabase = getServiceClient();
 
-    // Get all ready SOPs for this org (without raw_text to save memory)
-    const { data: sops, error: sopError } = await supabase
+    // Get SOPs — filtered by provided IDs if given, otherwise all ready SOPs
+    let query = supabase
       .from("sop_documents")
       .select("id, title, sop_code, version, department, category_id")
       .eq("organization_id", organization_id)
       .eq("status", "ready");
+
+    if (sop_ids && sop_ids.length > 0) {
+      query = query.in("id", sop_ids);
+    } else if (category_id) {
+      query = query.eq("category_id", category_id);
+    }
+
+    const { data: sops, error: sopError } = await query;
 
     if (sopError) throw new Error(`Fetch SOPs error: ${sopError.message}`);
     if (!sops || sops.length < 2) {
@@ -72,6 +80,8 @@ serve(async (req: Request) => {
       .from("duplicate_analyses")
       .insert({
         organization_id,
+        name: name || null,
+        category_id: category_id || null,
         status: "running_layer1",
         total_sops: sops.length,
       })

@@ -261,26 +261,41 @@ const SOPLandscape = () => {
         .attr("pointer-events", "none");
     }
 
-    // Selection brush
-    const brush = d3.brush()
-      .extent([[0, 0], [width, height]])
-      .on("end", (event) => {
-        if (!event.selection) { setSelection([]); return; }
-        const [[x0, y0], [x1, y1]] = event.selection;
-        const transform = d3.zoomTransform(svg.node());
-        const selected = filteredNodes.filter(d => {
-          const px = transform.applyX(xScale(d.x));
-          const py = transform.applyY(yScale(d.y));
-          return px >= x0 && px <= x1 && py >= y0 && py <= y1;
-        });
-        setSelection(selected);
-        svg.select(".brush").call(brush.move, null);
-      });
+    // Distance scale bar
+    const scaleGroup = g.append("g").attr("class", "scale-bar").attr("transform", `translate(${padding}, ${height - 30})`);
 
-    svg.append("g").attr("class", "brush").call(brush);
+    // Compute what distance in UMAP space corresponds to known similarity thresholds
+    // Use the actual data range to calibrate
+    const umapRange = (xExtent[1] - xExtent[0]) || 1;
+    const pixelRange = width - 2 * padding;
+    const unitPerPixel = umapRange / pixelRange;
+
+    // Show 3 reference distances
+    const scaleBarWidth = 120;
+    const scaleUmapDist = unitPerPixel * scaleBarWidth;
+
+    scaleGroup.append("line")
+      .attr("x1", 0).attr("y1", 0).attr("x2", scaleBarWidth).attr("y2", 0)
+      .attr("stroke", "#64748b").attr("stroke-width", 2);
+    scaleGroup.append("line").attr("x1", 0).attr("y1", -4).attr("x2", 0).attr("y2", 4).attr("stroke", "#64748b").attr("stroke-width", 2);
+    scaleGroup.append("line").attr("x1", scaleBarWidth).attr("y1", -4).attr("x2", scaleBarWidth).attr("y2", 4).attr("stroke", "#64748b").attr("stroke-width", 2);
+
+    // Proximity guide
+    const guideGroup = svg.append("g").attr("class", "proximity-guide").attr("transform", `translate(${width - 200}, ${height - 50})`);
+    const guideData = [
+      { label: "Very Similar", color: "#dc2626", r: 8 },
+      { label: "Related", color: "#f59e0b", r: 20 },
+      { label: "Distinct", color: "#22c55e", r: 36 },
+    ];
+    guideGroup.append("text").text("Proximity Guide").attr("font-size", "10px").attr("fill", "#64748b").attr("font-weight", "600").attr("y", -8);
+    guideData.forEach((d, i) => {
+      const x = i * 62;
+      guideGroup.append("circle").attr("cx", x + 6).attr("cy", 10).attr("r", 4).attr("fill", d.color);
+      guideGroup.append("text").text(d.label).attr("x", x + 14).attr("y", 13).attr("font-size", "9px").attr("fill", "#64748b");
+    });
 
     // Click on background to deselect
-    svg.on("click", () => { setSelectedNode(null); });
+    svg.on("click", () => { setSelectedNode(null); setSelection([]); });
 
   }, [filteredNodes, discoveredEdges, declaredEdges, showDeclared, showDiscovered, showLabels, colorScale, filteredNodeIds]);
 
@@ -353,7 +368,7 @@ const SOPLandscape = () => {
           <div className="legend-shapes">
             <span className="legend-shape-item"><span className="shape-circle" /> Global</span>
             <span className="legend-shape-item"><span className="shape-square" /> Site</span>
-            <span className="legend-info">Size = version count · Drag to select region</span>
+            <span className="legend-info">Size = version count · Scroll to zoom · Click node for details</span>
           </div>
         </div>
 

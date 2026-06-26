@@ -83,7 +83,7 @@ const Login = () => {
       }
 
       if (data?.user) {
-        window.location.href = '/dashboard';
+        window.location.href = '/sop-library';
       }
     } catch (error) {
       setLoginError('An unexpected error occurred. Please try again.');

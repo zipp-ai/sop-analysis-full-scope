@@ -1,7 +1,6 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import Login from "../components/pages/Login/Login";
-import Dashboard from "../components/pages/Dashboard/Dashboard";
 import SOPManager from "../components/pages/SOPManager/SOPManager";
 import DuplicateDetection from "../components/pages/DuplicateDetection/DuplicateDetection";
 import Simplification from "../components/pages/Simplification/Simplification";
@@ -18,14 +17,14 @@ const PlaceholderPage = ({ title, description }) => (
 );
 
 const routes = (user) => [
-  { path: "/login", element: user ? <Navigate to="/dashboard" replace /> : <Login /> },
-  { path: "/dashboard", element: <ProtectedRoute user={user}><Layout><Dashboard /></Layout></ProtectedRoute> },
+  { path: "/login", element: user ? <Navigate to="/sop-library" replace /> : <Login /> },
   { path: "/sop-library", element: <ProtectedRoute user={user}><Layout><SOPManager /></Layout></ProtectedRoute> },
   { path: "/duplicates", element: <ProtectedRoute user={user}><Layout><DuplicateDetection /></Layout></ProtectedRoute> },
   { path: "/simplification", element: <ProtectedRoute user={user}><Layout><Simplification /></Layout></ProtectedRoute> },
   { path: "/landscape", element: <ProtectedRoute user={user}><Layout><SOPLandscape /></Layout></ProtectedRoute> },
   { path: "/monitoring", element: <ProtectedRoute user={user}><Layout><PlaceholderPage title="Regulatory Monitoring" description="Coming soon — SOP-to-regulation mapping, compliance tracking, and gap detection." /></Layout></ProtectedRoute> },
-  { path: "/", element: <Navigate to={user ? "/dashboard" : "/login"} replace /> },
+  { path: "/", element: <Navigate to={user ? "/sop-library" : "/login"} replace /> },
+  { path: "/dashboard", element: <Navigate to="/sop-library" replace /> },
   { path: "*", element: <NotFound /> },
 ];
 

@@ -19,6 +19,10 @@ const SOPManager = () => {
   const [viewingSop, setViewingSop] = useState(null);
   const [viewForm, setViewForm] = useState({});
   const [viewSaving, setViewSaving] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSop, setEditingSop] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editSaving, setEditSaving] = useState(false);
   const [organizationId, setOrganizationId] = useState(null);
   const [userId, setUserId] = useState(null);
   const [filterCategory, setFilterCategory] = useState("all");
@@ -101,6 +105,27 @@ const SOPManager = () => {
     }
   };
 
+  const handleEditSOP = (doc) => {
+    setEditingSop(doc);
+    setEditForm({
+      title: doc.title || "", sop_code: doc.sop_code || "", version: doc.version || "",
+      department: doc.department || "", site: doc.site || "Global", category_id: doc.category_id || "",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingSop) return;
+    try {
+      setEditSaving(true);
+      await duplicateService.updateSOPDocument(editingSop.id, editForm);
+      toastService.success("SOP updated");
+      setShowEditModal(false); setEditingSop(null);
+      await fetchData();
+    } catch (err) { toastService.error("Update failed: " + err.message); }
+    finally { setEditSaving(false); }
+  };
+
   const handleDeleteSOP = async () => {
     if (!sopToDelete) return;
     try {
@@ -176,7 +201,10 @@ const SOPManager = () => {
                 </select>
               )}
             </div>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
             <button className="upload-btn" onClick={() => setShowUploadModal(true)}>Bulk Upload</button>
+            <button className="dms-btn" disabled title="Coming soon">Connect to DMS</button>
+          </div>
           </div>
 
           <div className="sop-table-container">
@@ -212,7 +240,7 @@ const SOPManager = () => {
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                           </svg>
                         </button>
-                        <button className="edit-btn-sm" onClick={() => { handleViewSOP(doc); }} title="Edit metadata">
+                        <button className="edit-btn-sm" onClick={(e) => { e.stopPropagation(); handleEditSOP(doc); }} title="Edit metadata">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
                           </svg>
@@ -299,6 +327,28 @@ const SOPManager = () => {
       <Modal isOpen={showUploadModal} onClose={() => setShowUploadModal(false)} closeOnOutsideClick={true}>
         <BulkUpload organizationId={organizationId} userId={userId} categories={categories}
           onComplete={() => { setShowUploadModal(false); fetchData(); }} onBackgroundStart={() => {}} />
+      </Modal>
+
+      <Modal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setEditingSop(null); }} closeOnOutsideClick={!editSaving}>
+        <div className="edit-sop-modal">
+          <h3>Edit SOP Metadata</h3>
+          <div className="edit-form">
+            <div className="edit-field"><label>Title</label><input type="text" value={editForm.title || ""} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} /></div>
+            <div className="edit-row">
+              <div className="edit-field"><label>SOP Code</label><input type="text" value={editForm.sop_code || ""} onChange={(e) => setEditForm({ ...editForm, sop_code: e.target.value })} placeholder="e.g., SOP-QA-001" /></div>
+              <div className="edit-field"><label>Version</label><input type="text" value={editForm.version || ""} onChange={(e) => setEditForm({ ...editForm, version: e.target.value })} /></div>
+            </div>
+            <div className="edit-field"><label>Category</label><select value={editForm.category_id || ""} onChange={(e) => setEditForm({ ...editForm, category_id: e.target.value || null })}><option value="">Select</option>{categories.map(c => <option key={c.id} value={c.id}>{c.category_name}</option>)}</select></div>
+            <div className="edit-row">
+              <div className="edit-field"><label>Department</label><input type="text" value={editForm.department || ""} onChange={(e) => setEditForm({ ...editForm, department: e.target.value })} /></div>
+              <div className="edit-field"><label>Site</label><input type="text" value={editForm.site || ""} onChange={(e) => setEditForm({ ...editForm, site: e.target.value })} placeholder="Global" /></div>
+            </div>
+            <div className="edit-actions">
+              <button className="cancel-btn" onClick={() => { setShowEditModal(false); setEditingSop(null); }}>Cancel</button>
+              <button className="save-btn" onClick={handleSaveEdit} disabled={editSaving || !editForm.title}>{editSaving ? "Saving..." : "Save Changes"}</button>
+            </div>
+          </div>
+        </div>
       </Modal>
 
       <ConfirmationModal isOpen={showDeleteConfirm} onClose={() => { setShowDeleteConfirm(false); setSopToDelete(null); }}
